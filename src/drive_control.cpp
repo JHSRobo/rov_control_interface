@@ -60,6 +60,15 @@ ros::Publisher vel_pub; //!<publisher that publishes a Twist message containing 
 ros::Subscriber joy_sub1; //!<subscriber to the logitech joystick
 ros::Subscriber joy_sub2; //!<subscriber to the thrustmaster throttle
 
+//Depth Hold
+ros::Publisher dh_cmd_vel_pub; //publishes depth hold control effort to rov/cmd_vel
+ros::Subscriber dh_ctrl_eff_sub; //subscribes to depth hold control effort
+ros::Subscriber dh_state_sub //keeps an up-to-date depth value for when depth hold is enabled
+double most_recent_depth(0); //holds depth for when depth hold needs to be enabled
+ros::Publisher dh_toggle_pub; //toggles depth hold on/off by publishing to depth_hold/pid_enable
+ros::Subscriber dh_toggle_sub; //subscribes to dh_toggle from copilot package
+bool dhEnable(False);
+
 ros::Subscriber inversion_sub; //!<subscriber to inversion from copilota
 ros::Subscriber sensitivity_sub; //!<subscriber to sensitivity from copilot
 ros::Subscriber thruster_status_sub; //!<subscriber to thrusters enabled/disabled from copilot
@@ -70,7 +79,6 @@ ros::Publisher solenoid_control; //!<TCU solenoid controller
 ros::Publisher inversion_pub; //!<Inversion status publisher
 ros::Publisher sensitivity_pub; //!<Publishes sensitivity from copilot
 ros::Publisher thruster_status_pub; //!<Publishes thruster status from copilot
-
 
 
 /**
