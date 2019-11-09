@@ -14,12 +14,14 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/Joy.h>
 
+
 #include <dynamic_reconfigure/server.h>
 #include <copilot_interface/copilotControlParamsConfig.h>
 
 #include <std_msgs/UInt8.h> //For camera Pub
 #include <std_msgs/Bool.h>  //For tcu relay and solenoid controller Pub
 #include <rov_control_interface/rov_sensitivity.h>
+#include <std_msgs/Float64.h> //For pids
 
 const int linearJoyAxisFBIndex(1); //!<forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
 const int linearJoyAxisLRIndex(0); //!<left-right axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -63,11 +65,11 @@ ros::Subscriber joy_sub2; //!<subscriber to the thrustmaster throttle
 //Depth Hold
 ros::Publisher dh_cmd_vel_pub; //publishes depth hold control effort to rov/cmd_vel
 ros::Subscriber dh_ctrl_eff_sub; //subscribes to depth hold control effort
-ros::Subscriber dh_state_sub //keeps an up-to-date depth value for when depth hold is enabled
-double most_recent_depth(0); //holds depth for when depth hold needs to be enabled
-ros::Publisher dh_toggle_pub; //toggles depth hold on/off by publishing to depth_hold/pid_enable
-ros::Subscriber dh_toggle_sub; //subscribes to dh_toggle from copilot package
-bool dhEnable(False);
+ros::Subscriber dh_state_sub; //keeps an up-to-date depth value for when depth hold is enabled, stops updating while depth hold is enabled
+ros::Publisher dh_setpoint_pub; // publishes most recent depth to the depth_hold/setpoint
+double dhMostRecentDepth(0); //holds depth for when depth hold needs to be enabled
+ros::Subscriber dh_toggle_sub; //subscribes to depth_hold/pid_enable to update dhEnable for the state sub
+bool dhEnable(false);
 
 ros::Subscriber inversion_sub; //!<subscriber to inversion from copilota
 ros::Subscriber sensitivity_sub; //!<subscriber to sensitivity from copilot
@@ -303,6 +305,37 @@ void thrusterStatusCallback(const std_msgs::Bool::ConstPtr& data) {
   ROS_INFO_STREAM(thrustEN);
 }
 
+void dhToggleCallback(const std_msgs::Bool::ConstPtr& data) {
+  dhEnable = data->data;
+}
+
+void dhStateCallback(const std_msgs::Float64::ConstPtr& data) {
+  if (!dhEnable) { //only update depth if depth hold is disabled (dhEnable == false)
+    dhMostRecentDepth = data->data;
+  }
+  std_msgs::Float64 depth;
+  depth.data = dhMostRecentDepth;
+  dh_setpoint_pub.publish(depth);
+}
+
+void dhControlEffortCallback(const std_msgs::Float64::ConstPtr& data) { // no need for dhEnable check since pids won't publish control effort when disabled
+  v_axis = data->data;
+  //publish the vector values -> build up command vector message
+  geometry_msgs::Twist commandVectors;
+
+  commandVectors.linear.x = l_axisLR;
+  commandVectors.linear.y = l_axisFB;
+  commandVectors.linear.z = v_axis;
+
+  commandVectors.angular.x = a_axis;
+
+  //other angular axis for roll and pitch have phase 2 implementation
+  commandVectors.angular.y = 0;
+  commandVectors.angular.z = 0;
+  vel_pub.publish(commandVectors);
+}
+
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "drive_control");
@@ -315,6 +348,7 @@ int main(int argc, char **argv)
     thruster_status_sub = n.subscribe<std_msgs::Bool>("rov/thruster_status", 1, &thrusterStatusCallback);
     sensitivity_sub = n.subscribe<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3, &sensitivityCallback);
     inversion_sub = n.subscribe<std_msgs::UInt8>("rov/inversion", 2, &inversionCallback);
+
 
     vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     camera_select = n.advertise<std_msgs::UInt8>("rov/camera_select", 3);       //Camera pub
