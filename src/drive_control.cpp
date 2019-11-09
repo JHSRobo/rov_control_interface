@@ -138,7 +138,7 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
         expDrive(a_axis, driveExp);
         expDrive(l_axisLR, driveExp);
         expDrive(l_axisFB, driveExp);
-        if(useJoyVerticalAxis){
+        if(useJoyVerticalAxis && !dhEnable){
           v_axis = joy->axes[verticalJoyAxisIndex] * v_scale * -1;
           expDrive(v_axis, driveExp);
         }
@@ -179,7 +179,7 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
       joyVerticalLastInput = ros::Time::now().toSec();
       //check if thrusters disabled
       useJoyVerticalAxis = false;
-      if (thrustEN) {
+      if (thrustEN && !dhEnable) {
           //joystick message
           //float32[] axes          the axes measurements from a joystick
           //int32[] buttons         the buttons measurements from a joystick
