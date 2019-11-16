@@ -312,10 +312,10 @@ void dhToggleCallback(const std_msgs::Bool::ConstPtr& data) {
 void dhStateCallback(const std_msgs::Float64::ConstPtr& data) {
   if (!dhEnable) { //only update depth if depth hold is disabled (dhEnable == false)
     dhMostRecentDepth = data->data;
+    std_msgs::Float64 depth;
+    depth.data = dhMostRecentDepth;
+    dh_setpoint_pub.publish(depth);
   }
-  std_msgs::Float64 depth;
-  depth.data = dhMostRecentDepth;
-  dh_setpoint_pub.publish(depth);
 }
 
 void dhControlEffortCallback(const std_msgs::Float64::ConstPtr& data) { // no need for dhEnable check since pids won't publish control effort when disabled
