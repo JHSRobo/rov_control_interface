@@ -71,6 +71,10 @@ double dhMostRecentDepth(0); //holds depth for when depth hold needs to be enabl
 ros::Subscriber dh_toggle_sub; //subscribes to depth_hold/pid_enable to update dhEnable for the state sub
 bool dhEnable(false);
 
+//Roll Stabilization
+ros::Subscriber rs_ctrl_eff_sub; //subscribes to roll stab control effort
+double roll_cmd_vel(0); // global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
+
 ros::Subscriber inversion_sub; //!<subscriber to inversion from copilota
 ros::Subscriber sensitivity_sub; //!<subscriber to sensitivity from copilot
 ros::Subscriber thruster_status_sub; //!<subscriber to thrusters enabled/disabled from copilot
@@ -162,7 +166,7 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
     commandVectors.angular.x = a_axis;
 
     //other angular axis for roll and pitch have phase 2 implementation
-    commandVectors.angular.y = 0;
+    commandVectors.angular.y = roll_cmd_vel;
     commandVectors.angular.z = 0;
 
     vel_pub.publish(commandVectors);
@@ -330,9 +334,13 @@ void dhControlEffortCallback(const std_msgs::Float64::ConstPtr& data) { // no ne
   commandVectors.angular.x = a_axis;
 
   //other angular axis for roll and pitch have phase 2 implementation
-  commandVectors.angular.y = 0;
+  commandVectors.angular.y = roll_cmd_vel;
   commandVectors.angular.z = 0;
   vel_pub.publish(commandVectors);
+}
+
+void rsControlEffortCallback(const std_msgs::Float64::ConstPtr& data){
+  roll_cmd_vel = data->data;
 }
 
 
@@ -351,6 +359,7 @@ int main(int argc, char **argv)
     dh_state_sub = n.subscribe<std_msgs::Float64>("depth_hold/state", 1, &dhStateCallback);
     dh_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("depth_hold/control_effort", 1, &dhControlEffortCallback);
     dh_toggle_sub = n.subscribe<std_msgs::Bool>("depth_hold/pid_enable", 1, &dhToggleCallback);
+    rs_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("roll_stabilization/control_effort", 1, &rsControlEffortCallback);
 
     vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     camera_select = n.advertise<std_msgs::UInt8>("rov/camera_select", 3);       //Camera pub
