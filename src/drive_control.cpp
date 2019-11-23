@@ -205,7 +205,7 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
       commandVectors.angular.x = a_axis;
 
       //other angular axis for roll and pitch have phase 2 implementation
-      commandVectors.angular.y = 0;
+      commandVectors.angular.y = roll_cmd_vel;
       commandVectors.angular.z = 0;
 
       vel_pub.publish(commandVectors);
@@ -225,6 +225,7 @@ void joyWatchdogCB(const ros::TimerEvent&){
       //if the throttle is plugged in, then continue using the v_axis value
       commandVectors.linear.z = v_axis;
     }
+    commandVectors.angular.y = roll_cmd_vel;
     vel_pub.publish(commandVectors);
   }
 
