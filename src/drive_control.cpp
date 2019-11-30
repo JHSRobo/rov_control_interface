@@ -14,12 +14,14 @@
 #include <geometry_msgs/Twist.h>
 #include <sensor_msgs/Joy.h>
 
+
 #include <dynamic_reconfigure/server.h>
 #include <copilot_interface/copilotControlParamsConfig.h>
 
 #include <std_msgs/UInt8.h> //For camera Pub
 #include <std_msgs/Bool.h>  //For tcu relay and solenoid controller Pub
 #include <rov_control_interface/rov_sensitivity.h>
+#include <std_msgs/Float64.h> //For pids
 
 const int linearJoyAxisFBIndex(1); //!<forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
 const int linearJoyAxisLRIndex(0); //!<left-right axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -60,6 +62,19 @@ ros::Publisher vel_pub; //!<publisher that publishes a Twist message containing 
 ros::Subscriber joy_sub1; //!<subscriber to the logitech joystick
 ros::Subscriber joy_sub2; //!<subscriber to the thrustmaster throttle
 
+//Depth Hold
+ros::Publisher dh_cmd_vel_pub; //publishes depth hold control effort to rov/cmd_vel
+ros::Subscriber dh_ctrl_eff_sub; //subscribes to depth hold control effort
+ros::Subscriber dh_state_sub; //keeps an up-to-date depth value for when depth hold is enabled, stops updating while depth hold is enabled
+ros::Publisher dh_setpoint_pub; // publishes most recent depth to the depth_hold/setpoint
+double dhMostRecentDepth(0); //holds depth for when depth hold needs to be enabled
+ros::Subscriber dh_toggle_sub; //subscribes to depth_hold/pid_enable to update dhEnable for the state sub
+bool dhEnable(false);
+
+//Roll Stabilization
+ros::Subscriber rs_ctrl_eff_sub; //subscribes to roll stab control effort
+double roll_cmd_vel(0); // global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
+
 ros::Subscriber inversion_sub; //!<subscriber to inversion from copilota
 ros::Subscriber sensitivity_sub; //!<subscriber to sensitivity from copilot
 ros::Subscriber thruster_status_sub; //!<subscriber to thrusters enabled/disabled from copilot
@@ -70,7 +85,6 @@ ros::Publisher solenoid_control; //!<TCU solenoid controller
 ros::Publisher inversion_pub; //!<Inversion status publisher
 ros::Publisher sensitivity_pub; //!<Publishes sensitivity from copilot
 ros::Publisher thruster_status_pub; //!<Publishes thruster status from copilot
-
 
 
 /**
@@ -128,7 +142,7 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
         expDrive(a_axis, driveExp);
         expDrive(l_axisLR, driveExp);
         expDrive(l_axisFB, driveExp);
-        if(useJoyVerticalAxis){
+        if(useJoyVerticalAxis && !dhEnable){
           v_axis = joy->axes[verticalJoyAxisIndex] * v_scale * -1;
           expDrive(v_axis, driveExp);
         }
@@ -152,7 +166,7 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
     commandVectors.angular.x = a_axis;
 
     //other angular axis for roll and pitch have phase 2 implementation
-    commandVectors.angular.y = 0;
+    commandVectors.angular.y = roll_cmd_vel;
     commandVectors.angular.z = 0;
 
     vel_pub.publish(commandVectors);
@@ -169,7 +183,7 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
       joyVerticalLastInput = ros::Time::now().toSec();
       //check if thrusters disabled
       useJoyVerticalAxis = false;
-      if (thrustEN) {
+      if (thrustEN && !dhEnable) {
           //joystick message
           //float32[] axes          the axes measurements from a joystick
           //int32[] buttons         the buttons measurements from a joystick
@@ -191,7 +205,7 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
       commandVectors.angular.x = a_axis;
 
       //other angular axis for roll and pitch have phase 2 implementation
-      commandVectors.angular.y = 0;
+      commandVectors.angular.y = roll_cmd_vel;
       commandVectors.angular.z = 0;
 
       vel_pub.publish(commandVectors);
@@ -211,6 +225,7 @@ void joyWatchdogCB(const ros::TimerEvent&){
       //if the throttle is plugged in, then continue using the v_axis value
       commandVectors.linear.z = v_axis;
     }
+    commandVectors.angular.y = roll_cmd_vel;
     vel_pub.publish(commandVectors);
   }
 
@@ -295,6 +310,41 @@ void thrusterStatusCallback(const std_msgs::Bool::ConstPtr& data) {
   ROS_INFO_STREAM(thrustEN);
 }
 
+void dhToggleCallback(const std_msgs::Bool::ConstPtr& data) {
+  dhEnable = data->data;
+}
+
+void dhStateCallback(const std_msgs::Float64::ConstPtr& data) {
+  if (!dhEnable) { //only update depth if depth hold is disabled (dhEnable == false)
+    dhMostRecentDepth = data->data;
+    std_msgs::Float64 depth;
+    depth.data = dhMostRecentDepth;
+    dh_setpoint_pub.publish(depth);
+  }
+}
+
+void dhControlEffortCallback(const std_msgs::Float64::ConstPtr& data) { // no need for dhEnable check since pids won't publish control effort when disabled
+  v_axis = data->data;
+  //publish the vector values -> build up command vector message
+  geometry_msgs::Twist commandVectors;
+
+  commandVectors.linear.x = l_axisLR;
+  commandVectors.linear.y = l_axisFB;
+  commandVectors.linear.z = v_axis;
+
+  commandVectors.angular.x = a_axis;
+
+  //other angular axis for roll and pitch have phase 2 implementation
+  commandVectors.angular.y = roll_cmd_vel;
+  commandVectors.angular.z = 0;
+  vel_pub.publish(commandVectors);
+}
+
+void rsControlEffortCallback(const std_msgs::Float64::ConstPtr& data){
+  roll_cmd_vel = data->data;
+}
+
+
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "drive_control");
@@ -307,6 +357,10 @@ int main(int argc, char **argv)
     thruster_status_sub = n.subscribe<std_msgs::Bool>("rov/thruster_status", 1, &thrusterStatusCallback);
     sensitivity_sub = n.subscribe<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3, &sensitivityCallback);
     inversion_sub = n.subscribe<std_msgs::UInt8>("rov/inversion", 2, &inversionCallback);
+    dh_state_sub = n.subscribe<std_msgs::Float64>("depth_hold/state", 1, &dhStateCallback);
+    dh_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("depth_hold/control_effort", 1, &dhControlEffortCallback);
+    dh_toggle_sub = n.subscribe<std_msgs::Bool>("depth_hold/pid_enable", 1, &dhToggleCallback);
+    rs_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("roll_stabilization/control_effort", 1, &rsControlEffortCallback);
 
     vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     camera_select = n.advertise<std_msgs::UInt8>("rov/camera_select", 3);       //Camera pub
@@ -315,6 +369,8 @@ int main(int argc, char **argv)
     inversion_pub = n.advertise<std_msgs::UInt8>("rov/inversion", 3);
     sensitivity_pub = n.advertise<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3);
     thruster_status_pub = n.advertise<std_msgs::Bool>("rov/thruster_status", 3);
+    dh_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
+    dh_setpoint_pub = n.advertise<std_msgs::Float64>("depth_hold/setpoint", 1);
 
     //setup dynamic reconfigure
     dynamic_reconfigure::Server<copilot_interface::copilotControlParamsConfig> server;
