@@ -22,6 +22,7 @@
 #include <std_msgs/Bool.h>  //For tcu relay and solenoid controller Pub
 #include <rov_control_interface/rov_sensitivity.h>
 #include <std_msgs/Float64.h> //For pids
+#include <nav_msgs/Odometry.h> 
 
 const int linearJoyAxisFBIndex(1); //!<forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
 const int linearJoyAxisLRIndex(0); //!<left-right axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -314,9 +315,9 @@ void dhToggleCallback(const std_msgs::Bool::ConstPtr& data) {
   dhEnable = data->data;
 }
 
-void dhStateCallback(const std_msgs::Float64::ConstPtr& data) {
+void dhStateCallback(const nav_msgs::Odometry::ConstPtr& data) {
   if (!dhEnable) { //only update depth if depth hold is disabled (dhEnable == false)
-    dhMostRecentDepth = data->data;
+    dhMostRecentDepth = data->pose.pose.position.z * -1;
     std_msgs::Float64 depth;
     depth.data = dhMostRecentDepth;
     dh_setpoint_pub.publish(depth);
@@ -357,7 +358,7 @@ int main(int argc, char **argv)
     thruster_status_sub = n.subscribe<std_msgs::Bool>("rov/thruster_status", 1, &thrusterStatusCallback);
     sensitivity_sub = n.subscribe<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3, &sensitivityCallback);
     inversion_sub = n.subscribe<std_msgs::UInt8>("rov/inversion", 2, &inversionCallback);
-    dh_state_sub = n.subscribe<std_msgs::Float64>("depth_hold/state", 1, &dhStateCallback);
+    dh_state_sub = n.subscribe<nav_msgs::Odometry>("odometry/filtered", 1, &dhStateCallback);
     dh_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("depth_hold/control_effort", 1, &dhControlEffortCallback);
     dh_toggle_sub = n.subscribe<std_msgs::Bool>("depth_hold/pid_enable", 1, &dhToggleCallback);
     rs_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("roll_stabilization/control_effort", 1, &rsControlEffortCallback);
