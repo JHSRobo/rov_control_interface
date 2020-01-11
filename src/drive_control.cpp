@@ -22,6 +22,7 @@
 #include <std_msgs/Bool.h>  //For tcu relay and solenoid controller Pub
 #include <rov_control_interface/rov_sensitivity.h>
 #include <std_msgs/Float64.h> //For pids
+#include <std_msgs/Bool.h> //For pids
 #include <nav_msgs/Odometry.h> 
 
 const int linearJoyAxisFBIndex(1); //!<forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -86,7 +87,12 @@ ros::Publisher solenoid_control; //!<TCU solenoid controller
 ros::Publisher inversion_pub; //!<Inversion status publisher
 ros::Publisher sensitivity_pub; //!<Publishes sensitivity from copilot
 ros::Publisher thruster_status_pub; //!<Publishes thruster status from copilot
-
+ros::Publisher lat_pid_pub;
+ros::Publisher long_pid_pub;
+ros::Publisher vert_pid_pub;
+ros::Publisher roll_pid_pub;
+ros::Publisher pitch_pid_pub;
+ros::Publisher yaw_pid_pub;
 
 /**
 * @brief Controls variable joystick sensitivity. Small movements that use a small percent of the maximum control vector magnitude have a lower sensitivity than larger movements with the joystick.
@@ -282,6 +288,28 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     std_msgs::Bool thrusterStatusMsg;
     thrusterStatusMsg.data = thrustEN;
     thruster_status_pub.publish(thrusterStatusMsg);
+
+    std_msgs::Bool latPidData;
+    latPidData.data = config.lat_pid;
+    std_msgs::Bool longPidData;
+    longPidData.data = config.long_pid;
+    std_msgs::Bool vertPidData;
+    vertPidData.data = config.vert_pid;
+    std_msgs::Bool rollPidData;
+    rollPidData.data = config.roll_pid;
+    std_msgs::Bool pitchPidData;
+    pitchPidData.data = config.pitch_pid;
+    std_msgs::Bool yawPidData;
+    yawPidData.data = config.yaw_pid;
+
+    // PIDs
+    lat_pid_pub.publish(latPidData);
+    long_pid_pub.publish(longPidData);
+    vert_pid_pub.publish(vertPidData);
+    roll_pid_pub.publish(rollPidData);
+    //pitch_pid_pub.publish(pitchPidData);
+    yaw_pid_pub.publish(yawPidData);
+
 }
 
 /**
@@ -372,6 +400,17 @@ int main(int argc, char **argv)
     thruster_status_pub = n.advertise<std_msgs::Bool>("rov/thruster_status", 3);
     dh_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     dh_setpoint_pub = n.advertise<std_msgs::Float64>("depth_hold/setpoint", 1);
+
+    //topics for PIDs
+    lat_pid_pub = n.advertise<std_msgs::Bool>("/lat_motion/pid_enable", 1);
+    long_pid_pub = n.advertise<std_msgs::Bool>("/long_motion/pid_enable", 1);
+    vert_pid_pub = n.advertise<std_msgs::Bool>("/vert_motion/pid_enable", 1);
+    roll_pid_pub = n.advertise<std_msgs::Bool>("/roll_motion/pid_enable", 1);
+//    pitch_pid_pub = n.advertise<std_msgs::Bool>("/pitch_motion/pid_enable", 1);
+    yaw_pid_pub = n.advertise<std_msgs::Bool>("/yaw_motion/pid_enable", 1);
+
+
+
 
     //setup dynamic reconfigure
     dynamic_reconfigure::Server<copilot_interface::copilotControlParamsConfig> server;
