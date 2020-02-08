@@ -38,6 +38,7 @@ double a_axis(0);   //!< Holds the value of the rotational/angular control axis
 double l_axisLR(0); //!< Holds the value of the right-left linear control axis
 double l_axisFB(0); //!< Holds the value of the front-back linear control axis
 double v_axis(0);   //!< Holds the value of the vertical control axis
+double dh_eff(0);   // holds depth hold PID control effort
 
 
 bool thrustEN(false); //!<thrusters enabled (True = yes, False = default = no)
@@ -70,6 +71,7 @@ ros::Publisher dh_setpoint_pub; // publishes most recent depth to the depth_hold
 double dhMostRecentDepth(0); //holds depth for when depth hold needs to be enabled
 ros::Subscriber dh_toggle_sub; //subscribes to depth_hold/pid_enable to update dhEnable for the state sub
 bool dhEnable(false);
+ros::Publisher dh_enable_pub; // turns depth hold on/off when joystick vert is 0/not 0
 
 //Roll Stabilization
 ros::Subscriber rs_ctrl_eff_sub; //subscribes to roll stab control effort
@@ -142,9 +144,21 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
         expDrive(a_axis, driveExp);
         expDrive(l_axisLR, driveExp);
         expDrive(l_axisFB, driveExp);
-        if(useJoyVerticalAxis && !dhEnable){
+        if(useJoyVerticalAxis){
           v_axis = joy->axes[verticalJoyAxisIndex] * v_scale * -1;
           expDrive(v_axis, driveExp);
+
+          // turn position-based depth hold on/off
+          std_msgs::Bool dhEnableMsg;
+          if (v_axis == 0) {
+            dhEnable = true;
+            dhEnableMsg.data = dhEnable;
+          }
+          else {
+            dhEnable = false;
+            dhEnableMsg.data = dhEnable;
+          }
+          dh_enable_pub.publish(dhEnableMsg);
         }
 
 
@@ -154,6 +168,7 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
         l_axisLR = 0;
         l_axisFB = 0;
         v_axis = 0;
+        dhEnable = false;
     }
 
     //publish the vector values -> build up command vector message
@@ -161,8 +176,12 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
 
     commandVectors.linear.x = l_axisLR;
     commandVectors.linear.y = l_axisFB;
-    commandVectors.linear.z = v_axis; //linear z is for vertical strength
-
+    if (dhEnable){
+      commandVectors.linear.z = dh_eff;
+    }
+    else {
+      commandVectors.linear.z = v_axis; //linear z is for vertical strength
+    }
     commandVectors.angular.x = a_axis;
 
     //other angular axis for roll and pitch have phase 2 implementation
@@ -183,7 +202,7 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
       joyVerticalLastInput = ros::Time::now().toSec();
       //check if thrusters disabled
       useJoyVerticalAxis = false;
-      if (thrustEN && !dhEnable) {
+      if (thrustEN) {
           //joystick message
           //float32[] axes          the axes measurements from a joystick
           //int32[] buttons         the buttons measurements from a joystick
@@ -191,8 +210,21 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
           v_axis = joy->axes[verticalThrottleAxis] * v_scale * -1;
           expDrive(v_axis, driveExp);
 
+          // turn position-based depth hold on/off
+          std_msgs::Bool dhEnableMsg;
+          if (v_axis == 0) {
+            dhEnable = true;
+            dhEnableMsg.data = dhEnable;
+          }
+          else {
+            dhEnable = false;
+            dhEnableMsg.data = dhEnable;
+          }
+          dh_enable_pub.publish(dhEnableMsg);
+
       } else {
           v_axis = 0;
+          dhEnable = false;
       }
 
       //publish the vector values -> build up command vector message
@@ -200,8 +232,12 @@ void joyVerticalCallback(const sensor_msgs::Joy::ConstPtr& joy){
 
       commandVectors.linear.x = l_axisLR;
       commandVectors.linear.y = l_axisFB;
-      commandVectors.linear.z = v_axis; //linear z is for vertical strength
-
+      if (dhEnable){
+        commandVectors.linear.z = dh_eff;
+      }
+      else {
+        commandVectors.linear.z = v_axis; //linear z is for vertical strength
+      }
       commandVectors.angular.x = a_axis;
 
       //other angular axis for roll and pitch have phase 2 implementation
@@ -324,20 +360,7 @@ void dhStateCallback(const std_msgs::Float64::ConstPtr& data) {
 }
 
 void dhControlEffortCallback(const std_msgs::Float64::ConstPtr& data) { // no need for dhEnable check since pids won't publish control effort when disabled
-  v_axis = data->data;
-  //publish the vector values -> build up command vector message
-  geometry_msgs::Twist commandVectors;
-
-  commandVectors.linear.x = l_axisLR;
-  commandVectors.linear.y = l_axisFB;
-  commandVectors.linear.z = v_axis;
-
-  commandVectors.angular.x = a_axis;
-
-  //other angular axis for roll and pitch have phase 2 implementation
-  commandVectors.angular.y = roll_cmd_vel;
-  commandVectors.angular.z = 0;
-  vel_pub.publish(commandVectors);
+  dh_eff = data->data;
 }
 
 void rsControlEffortCallback(const std_msgs::Float64::ConstPtr& data){
@@ -371,6 +394,7 @@ int main(int argc, char **argv)
     thruster_status_pub = n.advertise<std_msgs::Bool>("rov/thruster_status", 3);
     dh_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     dh_setpoint_pub = n.advertise<std_msgs::Float64>("depth_hold/setpoint", 1);
+    dh_enable_pub = n.advertise<std_msgs::Bool>("depth_hold/pid_enable", 1);
 
     //setup dynamic reconfigure
     dynamic_reconfigure::Server<copilot_interface::copilotControlParamsConfig> server;
