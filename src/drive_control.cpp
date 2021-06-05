@@ -293,25 +293,12 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     a_scale = config.a_scale;
     v_scale = config.v_scale;
 
-    inversion = config.inversion;
-
-    //Camera publisher
-    std_msgs::UInt8 msg;
-    msg.data = config.camera;
-    camera_select.publish(msg);
-
-
     std_msgs::Bool relayMsg; //tcu board publisher
     std_msgs::Bool solMsg;   //tcu board publisher
     relayMsg.data = config.power;
-    solMsg.data = config.pneumatics;
     power_control.publish(relayMsg);
     solenoid_control.publish(solMsg);
 
-    // Inversion Publisher
-    std_msgs::UInt8 inversionMsg;
-    inversionMsg.data = inversion;
-    inversion_pub.publish(inversionMsg);
 
     // Sensitivty Publisher
      rov_control_interface::rov_sensitivity sensitivityMsg;
@@ -325,36 +312,15 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     thrusterStatusMsg.data = thrustEN;
     thruster_status_pub.publish(thrusterStatusMsg);
 
-    std_msgs::Bool latPidData;
-    latPidData.data = config.lat_pid;
-    std_msgs::Bool longPidData;
-    longPidData.data = config.long_pid;
-    std_msgs::Bool vertPidData;
-    vertPidData.data = config.vert_pid;
-    std_msgs::Bool rollPidData;
-    rollPidData.data = config.roll_pid;
-    std_msgs::Bool pitchPidData;
-    pitchPidData.data = config.pitch_pid;
-    std_msgs::Bool yawPidData;
-    yawPidData.data = config.yaw_pid;
-
-    // PIDs
-    lat_pid_pub.publish(latPidData);
-    long_pid_pub.publish(longPidData);
-    vert_pid_pub.publish(vertPidData);
-    roll_pid_pub.publish(rollPidData);
-    //pitch_pid_pub.publish(pitchPidData);
-    yaw_pid_pub.publish(yawPidData);
-
 }
 
 /**
 * @breif What the node does when copilot inversion setting publishes a new message
 * @param[in] joy "sensor_msgs/Joy" message that is recieved when the joystick publsihes a new message
-*/
+*
 void inversionCallback(const std_msgs::UInt8::ConstPtr& data) {
     inversion = data->data;
-}
+}*/
 
 /**
 * @breif What the node does when copilot sensitivity setting publishes a new message
@@ -408,7 +374,6 @@ int main(int argc, char **argv)
     joy_sub2 = n.subscribe<sensor_msgs::Joy>("joy/joy2", 2, &joyVerticalCallback);
     thruster_status_sub = n.subscribe<std_msgs::Bool>("rov/thruster_status", 1, &thrusterStatusCallback);
     sensitivity_sub = n.subscribe<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3, &sensitivityCallback);
-    inversion_sub = n.subscribe<std_msgs::UInt8>("rov/inversion", 2, &inversionCallback);
     dh_state_sub = n.subscribe<nav_msgs::Odometry>("odometry/filtered", 1, &dhStateCallback);
     dh_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("depth_hold/control_effort", 1, &dhControlEffortCallback);
     dh_toggle_sub = n.subscribe<std_msgs::Bool>("depth_hold/pid_enable", 1, &dhToggleCallback);
