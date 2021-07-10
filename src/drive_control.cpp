@@ -23,7 +23,7 @@
 #include <rov_control_interface/rov_sensitivity.h>
 #include <std_msgs/Float64.h> //For pids
 #include <std_msgs/Bool.h> //For pids
-#include <nav_msgs/Odometry.h> 
+#include <nav_msgs/Odometry.h>
 
 const int linearJoyAxisFBIndex(1); //!<forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
 const int linearJoyAxisLRIndex(0); //!<left-right axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -292,12 +292,6 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     l_scale = config.l_scale;
     a_scale = config.a_scale;
     v_scale = config.v_scale;
-
-    std_msgs::Bool relayMsg; //tcu board publisher
-    std_msgs::Bool solMsg;   //tcu board publisher
-    relayMsg.data = config.power;
-    power_control.publish(relayMsg);
-    solenoid_control.publish(solMsg);
 
 
     // Sensitivty Publisher
