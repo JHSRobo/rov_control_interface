@@ -51,7 +51,7 @@ bool microEN(false);
 bool useJoyVerticalAxis(true); //!< Holds the state that determines wether the joysticks vertical input or the throttles vertical input gets used
 
 
-//! inversion -> 1 Front, 2 Left, 3 Back, 4 Right
+//! inversion -> 1 Front, 2 Left, 3 Back, 4 Right, 5 Flipped
 int inversion(0);
 
 //! Variable for determining the bilinear threshold
@@ -81,7 +81,7 @@ ros::Publisher dh_enable_pub; // turns depth hold on/off when joystick vert is 0
 ros::Subscriber rs_ctrl_eff_sub; //subscribes to roll stab control effort
 double roll_cmd_vel(0); // global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
 
-ros::Subscriber inversion_sub; //!<subscriber to inversion from copilota
+ros::Subscriber inversion_sub; //!<subscriber to inversion from copilot
 ros::Subscriber sensitivity_sub; //!<subscriber to sensitivity from copilot
 ros::Subscriber thruster_status_sub; //!<subscriber to thrusters enabled/disabled from copilot
 
@@ -124,7 +124,10 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
         //int32[] buttons         the buttons measurements from a joystick
 
         //store axes variables and handle 4 cases of inversion
-        a_axis = joy->axes[angularJoyAxisIndex] * a_scale * -1; //changing sign makes rotate right positive
+        if (inversion == 5)
+            a_axis = joy->axes[angularJoyAxisIndex] * a_scale // Don't change sign when using the backup camera
+        else
+            a_axis = joy->axes[angularJoyAxisIndex] * a_scale * -1; //changing sign makes rotate right positive
 
         //NOTE: right and rotate right are negative on the joystick's LR axis
         //multiple LR axis by -1 in base position (front-front, etc.)to make right positive
@@ -320,10 +323,10 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
 /**
 * @breif What the node does when copilot inversion setting publishes a new message
 * @param[in] joy "sensor_msgs/Joy" message that is recieved when the joystick publsihes a new message
-*
+*/
 void inversionCallback(const std_msgs::UInt8::ConstPtr& data) {
     inversion = data->data;
-}*/
+}
 
 /**
 * @breif What the node does when copilot sensitivity setting publishes a new message
