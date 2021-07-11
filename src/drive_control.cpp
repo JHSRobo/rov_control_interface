@@ -45,6 +45,8 @@ double dh_eff(0);   // holds depth hold PID control effort
 
 bool thrustEN(false); //!<thrusters enabled (True = yes, False = default = no)
 
+bool microEN(false);
+
 //change this as a launch parameter in topside.launch
 bool useJoyVerticalAxis(true); //!< Holds the state that determines wether the joysticks vertical input or the throttles vertical input gets used
 
@@ -89,6 +91,7 @@ ros::Publisher solenoid_control; //!<TCU solenoid controller
 ros::Publisher inversion_pub; //!<Inversion status publisher
 ros::Publisher sensitivity_pub; //!<Publishes sensitivity from copilot
 ros::Publisher thruster_status_pub; //!<Publishes thruster status from copilot
+ros::Publisher micro_status_pub;
 ros::Publisher lat_pid_pub;
 ros::Publisher long_pid_pub;
 ros::Publisher vert_pid_pub;
@@ -287,7 +290,8 @@ void joyWatchdogCB(const ros::TimerEvent&){
 * @param[in] level The OR-ing of all the values that have changed in the copilot_interface param (not used yet)
 */
 void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint32_t level) {
-    thrustEN = config.thrustersEnabled;
+    thrustEN = config.thrusters;
+    microEN = config.micro-rov;
 
     l_scale = config.l_scale;
     a_scale = config.a_scale;
@@ -305,6 +309,11 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     std_msgs::Bool thrusterStatusMsg;
     thrusterStatusMsg.data = thrustEN;
     thruster_status_pub.publish(thrusterStatusMsg);
+    
+    // Micro ROV Enabled Publisher
+    std_msgs::Bool microStatusMsg;
+    microStatusMsg.data = microEN;
+    micro_status_pub.publish(microStatusMsg);
 
 }
 
@@ -333,6 +342,11 @@ void inversionCallback(const std_msgs::UInt8::ConstPtr& data) {
 void thrusterStatusCallback(const std_msgs::Bool::ConstPtr& data) {
   thrustEN = data->data;
   ROS_INFO_STREAM(thrustEN);
+}
+
+void microStatusCallback(const std_msgs::Bool::ConstPtr& data) {
+  microEN = data->data;
+  ROS_INFO_STREAM(microEN);
 }
 
 void dhToggleCallback(const std_msgs::Bool::ConstPtr& data) {
@@ -380,6 +394,7 @@ int main(int argc, char **argv)
     inversion_pub = n.advertise<std_msgs::UInt8>("rov/inversion", 3);
     sensitivity_pub = n.advertise<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3);
     thruster_status_pub = n.advertise<std_msgs::Bool>("rov/thruster_status", 3);
+    micro_status_pub = n.advertise<std_msgs::Bool>("micro/enable", 3);
     dh_cmd_vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     dh_setpoint_pub = n.advertise<std_msgs::Float64>("depth_hold/setpoint", 1);
     dh_enable_pub = n.advertise<std_msgs::Bool>("depth_hold/pid_enable", 1);
