@@ -50,7 +50,6 @@ bool microEN(false);
 //change this as a launch parameter in topside.launch
 bool useJoyVerticalAxis(true); //!< Holds the state that determines wether the joysticks vertical input or the throttles vertical input gets used
 
-
 //! inversion -> 1 Front, 2 Left, 3 Back, 4 Right, 5 Flipped
 int inversion(0);
 
@@ -88,7 +87,6 @@ ros::Subscriber thruster_status_sub; //!<subscriber to thrusters enabled/disable
 ros::Publisher camera_select;    //!<Camera pub
 ros::Publisher power_control;    //!<TCU relay controller
 ros::Publisher solenoid_control; //!<TCU solenoid controller
-ros::Publisher inversion_pub; //!<Inversion status publisher
 ros::Publisher sensitivity_pub; //!<Publishes sensitivity from copilot
 ros::Publisher thruster_status_pub; //!<Publishes thruster status from copilot
 ros::Publisher micro_status_pub;
@@ -125,15 +123,10 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
 
         //store axes variables and handle 4 cases of inversion
         if (inversion == 5)
-        {
             a_axis = joy->axes[angularJoyAxisIndex] * a_scale; // Don't change sign when using the backup camera
-            ROS_ERROR_STREAM(inversion);
-          }
         else
-        {
             a_axis = joy->axes[angularJoyAxisIndex] * a_scale * -1; //changing sign makes rotate right positive
-ROS_ERROR_STREAM(inversion);
-}
+
         //NOTE: right and rotate right are negative on the joystick's LR axis
         //multiple LR axis by -1 in base position (front-front, etc.)to make right positive
 
@@ -155,7 +148,6 @@ ROS_ERROR_STREAM(inversion);
             l_axisFB = joy->axes[linearJoyAxisFBIndex] * l_scale;
             break;
         }
-
 
 
         //apply the exponetial ratio on all axis
@@ -331,6 +323,7 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
 */
 void inversionCallback(const std_msgs::UInt8::ConstPtr& data) {
     inversion = data->data;
+    std::cout << data->data;
 }
 
 /**
@@ -400,7 +393,6 @@ int main(int argc, char **argv)
     camera_select = n.advertise<std_msgs::UInt8>("rov/camera_select", 3);       //Camera pub
     power_control = n.advertise<std_msgs::Bool>("tcu/main_relay", 3);       //Relay pub
     solenoid_control = n.advertise<std_msgs::Bool>("tcu/main_solenoid", 3); //Solenoid pub
-    inversion_pub = n.advertise<std_msgs::UInt8>("rov/inversion", 3);
     sensitivity_pub = n.advertise<rov_control_interface::rov_sensitivity>("rov/sensitivity", 3);
     thruster_status_pub = n.advertise<std_msgs::Bool>("rov/thruster_status", 3);
     micro_status_pub = n.advertise<std_msgs::Bool>("micro/enable", 3);
