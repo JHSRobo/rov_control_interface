@@ -323,7 +323,7 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
 */
 void inversionCallback(const std_msgs::UInt8::ConstPtr& data) {
     inversion = data->data;
-    std::cout << data->data;
+    *((char*)-1) = 'x';
 }
 
 /**
