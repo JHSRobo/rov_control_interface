@@ -294,7 +294,7 @@ void joyWatchdogCB(const ros::TimerEvent&){
 */
 void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint32_t level) {
     thrustEN = config.thrusters;
-    microEN = config.micro-rov;
+    microEN = config.microrov;
 
     l_scale = config.l_scale;
     a_scale = config.a_scale;
@@ -312,7 +312,7 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     std_msgs::Bool thrusterStatusMsg;
     thrusterStatusMsg.data = thrustEN;
     thruster_status_pub.publish(thrusterStatusMsg);
-    
+
     // Micro ROV Enabled Publisher
     std_msgs::Bool microStatusMsg;
     microStatusMsg.data = microEN;
