@@ -127,12 +127,12 @@ void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
         if (inversion == 5)
         {
             a_axis = joy->axes[angularJoyAxisIndex] * a_scale; // Don't change sign when using the backup camera
-            ROS_ERROR(inversion);
+            ROS_ERROR_STREAM(inversion);
           }
         else
         {
             a_axis = joy->axes[angularJoyAxisIndex] * a_scale * -1; //changing sign makes rotate right positive
-ROS_ERROR(inversion);
+ROS_ERROR_STREAM(inversion);
 }
         //NOTE: right and rotate right are negative on the joystick's LR axis
         //multiple LR axis by -1 in base position (front-front, etc.)to make right positive
