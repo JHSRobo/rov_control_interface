@@ -394,6 +394,7 @@ int main(int argc, char **argv)
     dh_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("depth_hold/control_effort", 1, &dhControlEffortCallback);
     dh_toggle_sub = n.subscribe<std_msgs::Bool>("depth_hold/pid_enable", 1, &dhToggleCallback);
     rs_ctrl_eff_sub = n.subscribe<std_msgs::Float64>("roll_stabilization/control_effort", 1, &rsControlEffortCallback);
+    inversion_sub = n.subscribe<std_msgs::UInt8>("rov/inversion", 1 &inversionCallback);
 
     vel_pub = n.advertise<geometry_msgs::Twist>("rov/cmd_vel", 1);
     camera_select = n.advertise<std_msgs::UInt8>("rov/camera_select", 3);       //Camera pub
