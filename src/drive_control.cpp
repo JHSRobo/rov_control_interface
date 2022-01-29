@@ -78,7 +78,7 @@ ros::Publisher dh_enable_pub; // turns depth hold on/off when joystick vert is 0
 
 //Roll Stabilization
 ros::Subscriber rs_ctrl_eff_sub; //subscribes to roll stab control effort
-double roll_cmd_vel(0); // global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
+double roll_cmd_vel(0); // # global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
 
 ros::Subscriber inversion_sub; //!<subscriber to inversion from copilot
 ros::Subscriber sensitivity_sub; //!<subscriber to sensitivity from copilot
@@ -112,7 +112,7 @@ double joyHorizontalLastInput(0.0);
 * @breif What the node does when joystick publishes a new message
 * @param[in] joy "sensor_msgs/Joy" message that is recieved when the joystick publsihes a new message
 */
-void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy){
+void joyHorizontalCallback(const sensor_msgs::Joy::ConstPtr& joy) {
     //once copilot interface is created the params will be replaced with topics (inversion + sensitivity)
     joyHorizontalLastInput = ros::Time::now().toSec();
     //check if thrusters disabled
