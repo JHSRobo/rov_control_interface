@@ -301,7 +301,7 @@ void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint
     // Sensitivty Publisher
      rov_control_interface::rov_sensitivity sensitivityMsg;
      sensitivityMsg.l_scale = l_scale;
-     sensitivityMsg.a_scale = a_scale;
+     sensitivityMsg.a_scable = a_scale;
      sensitivityMsg.v_scale = v_scale;
      sensitivity_pub.publish(sensitivityMsg);
 
