@@ -209,15 +209,15 @@ def joyWatchdogCB(data):
       l_axisFB = 0
       a_axis = 0
       if not useJoyVerticalAxis:
-   # if the throttle is plugged in,then continue using the v_axis value
-   commandVectors.linear.z = v_axis
-  commandVectors.angular.y = roll_cmd_vel
-  vel_pub.publish(commandVectors)
+        # if the throttle is plugged in,then continue using the v_axis value
+        commandVectors.linear.z = v_axis
+        commandVectors.angular.y = roll_cmd_vel
+        vel_pub.publish(commandVectors)
 
      # Check the throttle
-  if rospy.get_time() > joyVerticalLastInput + 1.5:
-     # ROS_ERROR("Throttle disconnection detected!")
-      useJoyVerticalAxis = True
+if rospy.get_time() > joyVerticalLastInput + 1.5:
+  # ROS_ERROR("Throttle disconnection detected!")
+  useJoyVerticalAxis = True
 
 
 
