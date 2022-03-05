@@ -8,7 +8,7 @@
 # This code contains implementations for bilinear control, sensitivity, and 4-way inversion. The node subscribes to a joy topic and publishes rov/cmd_vel to PID algorithms and vector drive.
 # section compile_sec Compilation
 # Compile using catkin_make in the ros_workspace directory.
-import dataclasses
+
 
 import rospy
 from geometry_msgs import Twist
