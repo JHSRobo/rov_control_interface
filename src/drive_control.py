@@ -83,7 +83,7 @@ def joyHorizontalCallback(joy):
     # check if thrusters disabled
     if thrustEN:
         # joystick message
-        if inversion == 5:
+        if inversion == 4:
             a_axis = joy.axes[angularJoyAxisIndex] * a_scale
         else:
             a_axis = joy.axes[angularJoyAxisIndex] * a_scale * -1
@@ -237,6 +237,7 @@ def controlCallback(config, level):
     sensitivityMsg.l_scale = l_scale
     sensitivityMsg.a_scale = a_scale
     sensitivityMsg.v_scale = v_scale
+    sensitivity_pub.publish(sensitivityMsg)    
 
     # Thrusters enabled Publisher
     thrusterStatusMsg = Bool()
@@ -248,7 +249,12 @@ def controlCallback(config, level):
     microStatusMsg.data = microEN
     micro_status_pub.publish(microStatusMsg)
 
+    # Inversion Publisher
+    inversionMsg = UInt8()
+    inversionMsg.data = config.inversion
+    inversion_pub.publish(inversionMsg)
     return config
+
 
 
 # What the node does when copilot inversion setting publishes a new message
@@ -316,7 +322,7 @@ def rsControlEffortCallback(data):
 
 
 def main():
-    global joy_sub1, joy_sub2, thruster_status_sub, sensitivity_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, rs_ctrl_eff_sub, inversion_sub, vel_pub, camera_select, power_control, solenoid_control, sensitivity_pub, thruster_status_pub, micro_status_pub, dh_cmd_vel_pub, dh_setpoint_pub, dh_enable_pub, lat_pid_pub, long_pid_pub, vert_pid_pub, roll_pid_pub, yaw_pid_pub
+    global joy_sub1, joy_sub2, thruster_status_sub, sensitivity_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, rs_ctrl_eff_sub, inversion_pub, inversion_sub, vel_pub, camera_select, power_control, solenoid_control, sensitivity_pub, thruster_status_pub, micro_status_pub, dh_cmd_vel_pub, dh_setpoint_pub, dh_enable_pub, lat_pid_pub, long_pid_pub, vert_pid_pub, roll_pid_pub, yaw_pid_pub
     joy_sub1 = rospy.Subscriber('joy/joy1', Joy, joyHorizontalCallback)
     joy_sub2 = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
     thruster_status_sub = rospy.Subscriber('rov/thruster_status', Bool,thrusterStatusCallback)
@@ -328,6 +334,7 @@ def main():
     inversion_sub = rospy.Subscriber('rov/inversion', UInt8, inversionCallback)
 
     vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
+    inversion_pub = rospy.Publisher('rov/inversion', UInt8, queue_size=1)
     camera_select = rospy.Publisher('rov/camera_select', UInt8, queue_size=3)
     power_control = rospy.Publisher('tcu/main_relay', Bool, queue_size=3)
     solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, queue_size=3)
