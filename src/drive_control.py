@@ -156,7 +156,7 @@ def joyVerticalCallback(joy):
   # check if thrusters disabled
   useJoyVerticalAxis = False
   if thrustEN:
-    v_axis = joy.axes[verticalThrottleAxis]
+    v_axis = joy.axes[verticalThrottleAxis] * v_scale * -1
     v_axis = expDrive(v_axis)
 
     # turn position-based depth hold on/off
