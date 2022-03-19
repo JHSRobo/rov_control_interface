@@ -11,22 +11,20 @@
 
 
 import rospy
-from geometry_msgs import Twist
-from sensor_msgs import Joy
+from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Joy
 
-from std_msgs import UInt8  # For camera  pub
-from std_msgs import Bool  # For TCU relay and solenoid controller pub and for pids
-from std_msgs import Float64  # For pids
-from nav_msgs import Odometry
+from std_msgs.msg import UInt8  # For camera  pub
+from std_msgs.msg import Bool  # For TCU relay and solenoid controller pub and for pids
+from std_msgs.msg import Float64  # For pids
+from nav_msgs.msg import Odometry
 
 from math import copysign
 from dynamic_reconfigure.server import Server
-from copilot_interface import copilotControlParamsConfig
-# need to import dynamic reconfigure
-# need to import copilot interface
-# need to import rov sensitivity
+from copilot_interface.cfg import copilotControlParamsConfig
+from rov_control_interface.msg import rov_sensitivity
 
-
+rospy.init_node("drive_control")
 linearJoyAxisFBIndex = 1  # forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
 linearJoyAxisLRIndex = 0  # left-right axis index in the joy topic array from the logitech Extreme 3D Pro
 angularJoyAxisIndex = 2  # rotational axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -73,7 +71,7 @@ roll_cmd_vel = 0  # global to store roll_stab control effort for cmd_vel integra
 
 
 def expDrive(axis):
-  axis = copysign(abs(axis) ** driveExp)
+  axis = copysign(abs(axis) ** driveExp, axis)
   return axis
 
 # variable for monitoring the topic frequency so that a disconnect can be declared if the frequency drops below 1Hz
@@ -115,15 +113,11 @@ def joyHorizontalCallback(joy):
             v_axis = expDrive(v_axis)
 
             # turn position-based depth hold on/off
-            dhEnableMsg = Bool()
             if v_axis == 0:
                 dhEnable = True
-                dhEnableMsg.data = dhEnable
             else:
                 dhEnable = False
-                dhEnableMsg.data = dhEnable
-
-            dh_enable_pub.publish(dhEnableMsg)
+            dh_enable_pub.publish(dhEnable)
     else:
         a_axis = 0
         l_axisLR = 0
@@ -227,9 +221,6 @@ if rospy.get_time() > joyVerticalLastInput + 1.5:
 # &config New copilot_interface param
 # level The OR-ing of all the values that have changed in the copilot_interface param (not used yet)
 
-def rov_sensitivity():
-    pass
-
 
 def controlCallback(config, level):
     global thrustEN, microEN, l_scale, a_scale, v_scale
@@ -248,16 +239,16 @@ def controlCallback(config, level):
     sensitivityMsg.v_scale = v_scale
 
     # Thrusters enabled Publisher
-    thrusterStatusMsg = Bool
+    thrusterStatusMsg = Bool()
     thrusterStatusMsg.data = thrustEN
     thruster_status_pub.publish(thrusterStatusMsg)
 
     # Micro ROV Enabled Publisher
-    microStatusMsg = Bool
+    microStatusMsg = Bool()
     microStatusMsg.data = microEN
     micro_status_pub.publish(microStatusMsg)
 
-
+    return config
 
 
 # What the node does when copilot inversion setting publishes a new message
@@ -271,7 +262,7 @@ def inversionCallback(data):
 # What the node does when copilot sensitivity setting publishes a new message
 # "rov_control_interface/rov_sensitivity." message that is received when the sensitivity setting is changed
 
-def sesitivityCallback(data):
+def sensitivityCallback(data):
     global l_scale, a_scale, v_scale
     l_scale = data.l_scale
     a_scale = data.a_scale
@@ -318,7 +309,7 @@ def dhControlEffortCallback(data): # no need for dhEnable check since PIDs won't
   dh_eff = data.data
 
 
-def rsControleffortCallback(data):
+def rsControlEffortCallback(data):
   global roll_cmd_vel
   roll_cmd_vel = data.data
 
@@ -336,23 +327,23 @@ def main():
     rs_ctrl_eff_sub = rospy.Subscriber('roll_stabilization/control_effort', Float64, rsControlEffortCallback)
     inversion_sub = rospy.Subscriber('rov/inversion', UInt8, inversionCallback)
 
-    vel_pub = rospy.Publisher('rov/cmd_vel', Twist, 1)
-    camera_select = rospy.Publisher('rov/camera_select', UInt8, 3)
-    power_control = rospy.Publisher('tcu/main_relay', Bool, 3)
-    solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, 3)
-    sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, 3)
-    thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, 3)
-    micro_status_pub = rospy.Publisher('micro/enable', Bool, 3)
-    dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, 1)
-    dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, 1)
-    dh_enable_pub = rospy.Publisher('depth_hold/pid_enable', Bool, 1)
+    vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
+    camera_select = rospy.Publisher('rov/camera_select', UInt8, queue_size=3)
+    power_control = rospy.Publisher('tcu/main_relay', Bool, queue_size=3)
+    solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, queue_size=3)
+    sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, queue_size=3)
+    thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
+    micro_status_pub = rospy.Publisher('micro/enable', Bool, queue_size=3)
+    dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
+    dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, queue_size=1)
+    dh_enable_pub = rospy.Publisher('depth_hold/pid_enable', Bool, queue_size=1)
 
     # topics for PIDs
-    lat_pid_pub = rospy.Publisher('/lat_motion/pid_enable', Bool, 1)
-    long_pid_pub = rospy.Publisher('/long_motion/pid_enable', Bool, 1)
-    vert_pid_pub = rospy.Publisher('/vert_motion/pid_enable', Bool, 1)
-    roll_pid_pub = rospy.Publisher('/roll_motion/pid_enable', Bool, 1)
-    yaw_pid_pub = rospy.Publisher('/yaw_motion/pid_enable', Bool, 1)
+    lat_pid_pub = rospy.Publisher('/lat_motion/pid_enable', Bool, queue_size=1)
+    long_pid_pub = rospy.Publisher('/long_motion/pid_enable', Bool, queue_size=1)
+    vert_pid_pub = rospy.Publisher('/vert_motion/pid_enable', Bool, queue_size=1)
+    roll_pid_pub = rospy.Publisher('/roll_motion/pid_enable', Bool, queue_size=1)
+    yaw_pid_pub = rospy.Publisher('/yaw_motion/pid_enable', Bool, queue_size=1)
 
 
 
@@ -361,7 +352,7 @@ def main():
     server = Server(copilotControlParamsConfig, controlCallback)
 
     # create a ROS timer to call a callback that checks the joystick update rate (must be > 0.667Hz with ROS time)
-    joystickWatchdog = n.createTimer(rospy.Duration(1.5), joyWatchdogCB)
+    #joystickWatchdog = rospy.createTimer(rospy.Duration(1.5), joyWatchdogCB)
 
     # Enter the event loop
     rospy.spin()
