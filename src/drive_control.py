@@ -45,9 +45,6 @@ dh_eff = 0  # Holds depth hold PID control effort
 
 thrustEN = False  # thrusters enabled (True = yes, False = default = no
 
-microEN = False
-
-
 useJoyVerticalAxis = True  # Holds the state that determines whether the joysticks vertical input of the throttles vertical input gets used
 
 # inversion -> 1 Front, 2 Left, 3 Back, 4 Right, 5 Flipped; used when switching perspectives on ROV
@@ -223,9 +220,8 @@ if rospy.get_time() > joyVerticalLastInput + 1.5:
 
 
 def controlCallback(config, level):
-    global thrustEN, microEN, l_scale, a_scale, v_scale
+    global thrustEN, l_scale, a_scale, v_scale
     thrustEN = config.thrusters
-    microEN = config.microrov
 
     l_scale = config.l_scale
     a_scale = config.a_scale
@@ -243,11 +239,6 @@ def controlCallback(config, level):
     thrusterStatusMsg = Bool()
     thrusterStatusMsg.data = thrustEN
     thruster_status_pub.publish(thrusterStatusMsg)
-
-    # Micro ROV Enabled Publisher
-    microStatusMsg = Bool()
-    microStatusMsg.data = microEN
-    micro_status_pub.publish(microStatusMsg)
 
     # Inversion Publisher
     inversionMsg = UInt8()
@@ -287,12 +278,6 @@ def thrusterStatusCallback(data):
   global thrustEN
   thrustEN = data.data
   ROS_INFO_STREAM(thrustEN)
-
-
-def microStatusCallback(data):
-  global microEN
-  microEN = data.data
-  ROS_INFO_STREAM(microEN)
 
 
 def dhToggleCallback(data):
@@ -340,7 +325,6 @@ def main():
     solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, queue_size=3)
     sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, queue_size=3)
     thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
-    micro_status_pub = rospy.Publisher('micro/enable', Bool, queue_size=3)
     dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
     dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, queue_size=1)
     dh_enable_pub = rospy.Publisher('depth_hold/pid_enable', Bool, queue_size=1)
