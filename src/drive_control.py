@@ -220,13 +220,14 @@ if rospy.get_time() > joyVerticalLastInput + 1.5:
 
 
 def controlCallback(config, level):
-    global thrustEN, l_scale, a_scale, v_scale
+    global thrustEN, l_scale, a_scale, v_scale, dhEnable
     thrustEN = config.thrusters
 
     l_scale = config.l_scale
     a_scale = config.a_scale
     v_scale = config.v_scale
-
+    
+    dhEnable = config.dh_enable
 
     # Sensitivity publisher
     sensitivityMsg = rov_sensitivity()
