@@ -157,19 +157,19 @@ def joyVerticalCallback(joy):
     v_axis = expDrive(v_axis)
 
     # turn position-based depth hold on/off
-    dhEnableMsg = Bool()
-    if v_axis == 0:
-        dhEnable = True
-        dhEnableMsg.data = dhEnable
-    else:
-        dhEnable = False
-        dhEnableMsg.data = dhEnable
+    # dhEnableMsg = Bool()
+    # if v_axis == 0:
+        # dhEnable = True
+        # dhEnableMsg.data = dhEnable
+    # else:
+        # dhEnable = False
+        # dhEnableMsg.data = dhEnable
 
-    dh_enable_pub.publish(dhEnableMsg)
+    # dh_enable_pub.publish(dhEnableMsg)
 
-  else:
-      v_axis = 0
-      dhEnable = False
+  # else:
+      # v_axis = 0
+      # dhEnable = False
 
 
   commandVectors = Twist()
