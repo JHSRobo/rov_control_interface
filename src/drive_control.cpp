@@ -291,7 +291,7 @@ void joyWatchdogCB(const ros::TimerEvent&){
 */
 void controlCallback(copilot_interface::copilotControlParamsConfig &config, uint32_t level) {
     thrustEN = config.thrusters;
-    microEN = config.microrov;
+    //microEN = config.microrov;
 
     l_scale = config.l_scale;
     a_scale = config.a_scale;
