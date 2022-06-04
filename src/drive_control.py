@@ -37,6 +37,10 @@ l_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 5
 a_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
 v_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
 
+p_scalar = 0
+i_scalar = 0
+d_scalar = 0
+
 a_axis = 0  # Holds the value of the rotational/angular control axis
 l_axisLR = 0  # Holds the value of the right-left linear control axis
 l_axisFB = 0  # Holds the value of the front-back linear control axis
