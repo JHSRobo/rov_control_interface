@@ -342,7 +342,7 @@ def main():
     power_control = rospy.Publisher('tcu/main_relay', Bool, queue_size=3)
     solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, queue_size=3)
     sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, queue_size=3)
-    depth_hold_pub = rospy.Publisher('depth_hold/scales', PID, queue_size=3)
+    depth_hold_pub = rospy.Publisher('depth_hold/pid_vals', PID, queue_size=3)
     thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
     dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
     dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, queue_size=1)
