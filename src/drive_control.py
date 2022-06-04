@@ -23,7 +23,7 @@ from math import copysign
 from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
 from rov_control_interface.msg import rov_sensitivity
-from rov_control_interface.msg import PID
+import PID
 
 rospy.init_node("drive_control")
 linearJoyAxisFBIndex = 1  # forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
