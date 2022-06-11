@@ -33,7 +33,7 @@ verticalJoyAxisIndex = 3  # vertical axis index in the joy topic array from the 
 verticalThrottleAxis = 2  # vertical axis index in the joy topic array from the Thrustmaster TWCS Throttle
 
 l_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
-a_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
+a_scale = 0.25  # Holds a percent multiplier for sensitivity control. Default = 50%
 v_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
 
 p_scalar = 0
