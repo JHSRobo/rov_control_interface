@@ -80,7 +80,16 @@ def expDrive(axis):
 joyHorizontalLastInput = 0.0
 
 def joyHorizontalCallback(joy):
-    global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, v_axis, dhEnable, commandVectors
+    global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, v_axis, dhEnable, commandVectors, camera_select
+    if joy.buttons[2]:
+        camera_select.publish(1)
+    elif joy.buttons[3]:
+        camera_select.publish(2)
+    elif joy.buttons[4]:
+        camera_select.publish(3)
+    elif joy.buttons[5]:
+        camera_select.publish(4)
+    
     joyHorizontalLastInput = rospy.get_time()
     # check if thrusters disabled
     if thrustEN:
