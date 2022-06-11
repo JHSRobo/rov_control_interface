@@ -23,7 +23,6 @@ from math import copysign
 from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
 from rov_control_interface.msg import rov_sensitivity
-import PID
 
 rospy.init_node("drive_control")
 linearJoyAxisFBIndex = 1  # forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
@@ -254,11 +253,11 @@ def controlCallback(config, level):
     sensitivity_pub.publish(sensitivityMsg)    
 
     # PID depth hold publisher
-    dhMsg = PID()
-    dhMsg.p_scalar = p_scalar
-    dhMsg.i_scalar = i_scalar
-    dhMsg.d_scalar = d_scalar
-    dh_pub.publish(dhMsg)
+    #dhMsg = PID()
+    ##dhMsg.p_scalar = p_scalar
+    #dhMsg.i_scalar = i_scalar
+    #dhMsg.d_scalar = d_scalar
+    #dh_pub.publish(dhMsg)
     
     # Thrusters enabled Publisher
     thrusterStatusMsg = Bool()
@@ -341,7 +340,7 @@ def main():
     joy_sub2 = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
     thruster_status_sub = rospy.Subscriber('rov/thruster_status', Bool,thrusterStatusCallback)
     sensitivity_sub = rospy.Subscriber('rov/sensitivity', rov_sensitivity, sensitivityCallback)
-    depth_hold_sub = rospy.Subscriber('depth_hold/pid_enable', PID, depthHoldCallback)
+    #depth_hold_sub = rospy.Subscriber('depth_hold/pid_enable', PID, depthHoldCallback)
     dh_state_sub = rospy.Subscriber('odometry/filtered', Odometry, dhStateCallback)
     dh_ctrl_eff_sub = rospy.Subscriber('depth_hold/control_effort', Float64, dhControlEffortCallback)
     dh_toggle_sub = rospy.Subscriber('depth_hold/pid_enable', Bool, dhToggleCallback)
@@ -354,7 +353,7 @@ def main():
     power_control = rospy.Publisher('tcu/main_relay', Bool, queue_size=3)
     solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, queue_size=3)
     sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, queue_size=3)
-    depth_hold_pub = rospy.Publisher('depth_hold/pid_vals', PID, queue_size=3)
+    #depth_hold_pub = rospy.Publisher('depth_hold/pid_vals', PID, queue_size=3)
     thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
     dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
     dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, queue_size=1)
