@@ -17,6 +17,7 @@ find_package(catkin REQUIRED COMPONENTS
         dynamic_reconfigure
         std_msgs
         message_generation
+        sensor_msgs
         )
 
 ## System dependencies are found with CMake's conventions
