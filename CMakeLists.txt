@@ -76,6 +76,7 @@ add_message_files(
 generate_messages(
         DEPENDENCIES
         std_msgs  # Or other packages containing msgs
+        sensor_msgs
 )
 
 ################################################
