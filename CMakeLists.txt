@@ -206,7 +206,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(drive_control src/drive_control.cpp)
 target_link_libraries(drive_control ${catkin_LIBRARIES})
 add_dependencies(drive_control ${catkin_EXPORTED_TARGETS})
 add_dependencies(drive_control ${catkin_EXPORTED_TARGETS})
