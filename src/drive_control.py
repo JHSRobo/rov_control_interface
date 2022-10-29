@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-# author Adon Sharp
-# version 0.2
-# date 1-15-2022
+# author Adon Sharp | v0.2 | 1-15-2022
+# author Alex Bertran | v1.0 | 10-29-2022
 # warning this file contains temporary implementations for cameras, tcu board control, and copilot interface
 # mainpage the drive_control node
 # section intro_sec Introduction
@@ -68,6 +67,11 @@ dhEnable = False
 
 roll_cmd_vel = 0  # global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
 
+# Vectors in 2D or 1D
+horizJoyVector = Twist()
+vertJoyVector = Twist()
+dhVector = Twist()
+
 
 
 
@@ -79,7 +83,7 @@ def expDrive(axis):
 joyHorizontalLastInput = 0.0
 
 def joyHorizontalCallback(joy):
-    global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, v_axis, dhEnable, commandVectors, camera_select
+    global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, v_axis, dhEnable, horizJoyVector, camera_select
     if joy.buttons[2]:
         camera_select.publish(1)
     elif joy.buttons[3]:
@@ -118,54 +122,51 @@ def joyHorizontalCallback(joy):
         a_axis = expDrive(a_axis)
         l_axisLR = expDrive(l_axisLR)
         l_axisFB = expDrive(l_axisFB)
-        if useJoyVerticalAxis:
-            v_axis = joy.axes[verticalJoyAxisIndex] * v_scale * -1
-            v_axis = expDrive(v_axis)
+        #if useJoyVerticalAxis:
+            #v_axis = joy.axes[verticalJoyAxisIndex] * v_scale * -1
+            #v_axis = expDrive(v_axis)
 
             # turn position-based depth hold on/off
-            if v_axis == 0:
-                dhEnable = True
-            else:
-                dhEnable = False
-            dh_enable_pub.publish(dhEnable)
+            #if v_axis == 0:
+                #dhEnable = True
+            #else:
+                #dhEnable = False
+            #dh_enable_pub.publish(dhEnable)
     else:
         a_axis = 0
         l_axisLR = 0
         l_axisFB = 0
-        v_axis = 0
-        dhEnable = False
+        #v_axis = 0
+        #dhEnable = False
 
     # publish the vector values -> build up command vector message
-    commandVectors = Twist()
+    horizJoyVector = Twist()
 
-    commandVectors.linear.x = l_axisLR
-    commandVectors.linear.y = l_axisFB
-    if dhEnable:
-        commandVectors.linear.z = dh_eff
-    else:
-        commandVectors.linear.z = v_axis
+    horizJoyVector.linear.x = l_axisLR
+    horizJoyVector.linear.y = l_axisFB
+    horizJoyVector.linear.z = 0
 
-    commandVectors.angular.x = a_axis
+    horizJoyVector.angular.x = a_axis
 
     # other angular axis for roll and pitch
-    commandVectors.angular.y = roll_cmd_vel
-    commandVectors.angular.z = 0
+    horizJoyVector.angular.y = roll_cmd_vel
+    horizJoyVector.angular.z = 0
 
-    vel_pub.publish(commandVectors)
+    #vel_pub.publish(horizJoyVector)
 
 # variable for monitoring the topic frequency so that a disconnect can be declared if the frequency drops below 1Hz
-joyVerticalLastInput = 0.0
+#joyVerticalLastInput = 0.0
 
 # what the node does when throttle publishes a new message
 # joy "sensor_msgs/joy" message that is received when the joystick publishes a new message
 
 def joyVerticalCallback(joy):
-  global joyVerticalLastInput, useJoyVerticalAxis, v_axis, dhEnable, commandVectors
+  global joyVerticalLastInput, useJoyVerticalAxis, v_axis, dhEnable, vertJoyVector
   # once copilot interface is created the params will be replaced with topics (inversion + sensitivity)
   joyVerticalLastInput = rospy.get_time()
   # check if thrusters disabled
   useJoyVerticalAxis = False
-  if thrustEN:
+  if thrustEN and dhEnable == False:
     v_axis = joy.axes[verticalThrottleAxis] * v_scale * -1
     v_axis = expDrive(v_axis)
 
@@ -185,43 +186,45 @@ def joyVerticalCallback(joy):
       # dhEnable = False
 
 
-  commandVectors = Twist()
-  commandVectors.linear.x = l_axisLR
-  commandVectors.linear.y = l_axisFB
-  if dhEnable:
-      commandVectors.linear.z = dh_eff
-  else:
-      commandVectors.linear.z = v_axis
-  commandVectors.angular.x = a_axis
+  joyVertVector.linear.x = 0
+  joyVertVector.linear.y = 0
+  #if dhEnable:
+      #joyVertVector.linear.z = dh_eff
+  #else:
+  joyVertVector.linear.z = v_axis
+  
+  joyVertVector.angular.x = 0
 
   # other angular axis for roll and pitch have phase 2 implementation
-  commandVectors.angular.y = roll_cmd_vel
-  commandVectors.angular.z = 0
+  joyVertVector.angular.y = 0
+  joyVertVector.angular.z = 0
 
-  vel_pub.publish(commandVectors)
+  #vel_pub.publish(joyVertVector)
+  elif thrustEN and dhEnable:
+    depthHold() # NOT IMPLEMENTED YET
 
 
-def joyWatchdogCB(data):
-  global commandVectors, vel_pub, l_axisFB, l_axisLR, a_axis, useJoyVerticalAxis
+#def joyWatchdogCB(data):
+  #global commandVectors, vel_pub, l_axisFB, l_axisLR, a_axis, useJoyVerticalAxis
   # checks the joystick
-  if rospy.get_time() > joyHorizontalLastInput + 1.5:
+  #if rospy.get_time() > joyHorizontalLastInput + 1.5:
       # ROS_ERROR("Joystick disconnection detected!")
       # publish the vector values for failsafe mode
-      commandVectors = Twist() # Default message contains all zeros
+      #commandVectors = Twist() # Default message contains all zeros
       # Reset all the values to prevent feedback loop from throttle
-      l_axisLR = 0
-      l_axisFB = 0
-      a_axis = 0
-      if not useJoyVerticalAxis:
+      #l_axisLR = 0
+      #l_axisFB = 0
+      #a_axis = 0
+      #if not useJoyVerticalAxis:
         # if the throttle is plugged in,then continue using the v_axis value
-        commandVectors.linear.z = v_axis
-        commandVectors.angular.y = roll_cmd_vel
-        vel_pub.publish(commandVectors)
+        #commandVectors.linear.z = v_axis
+        #commandVectors.angular.y = roll_cmd_vel
+        #vel_pub.publish(commandVectors)
 
      # Check the throttle
-if rospy.get_time() > joyVerticalLastInput + 1.5:
+#if rospy.get_time() > joyVerticalLastInput + 1.5:
   # ROS_ERROR("Throttle disconnection detected!")
-  useJoyVerticalAxis = True
+  #useJoyVerticalAxis = True
 
 
 
