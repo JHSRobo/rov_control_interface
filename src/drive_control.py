@@ -72,9 +72,6 @@ horizJoyVector = Twist()
 vertJoyVector = Twist()
 dhVector = Twist()
 
-
-
-
 def expDrive(axis):
   axis = copysign(abs(axis) ** driveExp, axis)
   return axis
@@ -202,32 +199,6 @@ def joyVerticalCallback(joy):
   #vel_pub.publish(joyVertVector)
   elif thrustEN and dhEnable:
     depthHold() # NOT IMPLEMENTED YET
-
-
-#def joyWatchdogCB(data):
-  #global commandVectors, vel_pub, l_axisFB, l_axisLR, a_axis, useJoyVerticalAxis
-  # checks the joystick
-  #if rospy.get_time() > joyHorizontalLastInput + 1.5:
-      # ROS_ERROR("Joystick disconnection detected!")
-      # publish the vector values for failsafe mode
-      #commandVectors = Twist() # Default message contains all zeros
-      # Reset all the values to prevent feedback loop from throttle
-      #l_axisLR = 0
-      #l_axisFB = 0
-      #a_axis = 0
-      #if not useJoyVerticalAxis:
-        # if the throttle is plugged in,then continue using the v_axis value
-        #commandVectors.linear.z = v_axis
-        #commandVectors.angular.y = roll_cmd_vel
-        #vel_pub.publish(commandVectors)
-
-     # Check the throttle
-#if rospy.get_time() > joyVerticalLastInput + 1.5:
-  # ROS_ERROR("Throttle disconnection detected!")
-  #useJoyVerticalAxis = True
-
-
-
 
 # Handles copilot input: updates thrusters, enables sensitivity, and enables inversion.
 # Callback to anything published by the dynamic reconfigure copilot page
