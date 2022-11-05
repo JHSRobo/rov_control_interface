@@ -46,6 +46,7 @@ v_axis = 0  # Holds the value of the vertical control axis
 
 
 thrustEN = False  # thrusters enabled (True = yes, False = default = no
+dhEnable = False  # for depth hold, TEMPORARY PLACEHOLDER TO PREVENT ERRORS
 
 useJoyVerticalAxis = True  # Holds the state that determines whether the joysticks vertical input of the throttles vertical input gets used
 
@@ -74,7 +75,6 @@ joyHorizontalLastInput = 0.0
 
 
 def joyHorizontalCallback(joy):
-
     global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, camera_select, joyVector
     #Bodge code for camera switching. Move to joystick program later on.
     
@@ -107,24 +107,17 @@ def joyHorizontalCallback(joy):
         l_axisLR = 0
         l_axisFB = 0
 
-
-    # publish the vector values -> build up command vector message
-    horizJoyVector = Twist()
-
     joyVector.linear.x = l_axisLR
     joyVector.linear.y = l_axisFB
     joyVector.angular.x = a_axis
 
-    vel_pub.publish(horizJoyVector)
-
-# variable for monitoring the topic frequency so that a disconnect can be declared if the frequency drops below 1Hz
-#joyVerticalLastInput = 0.0
+    vel_pub.publish(joyVector)
 
 # what the node does when throttle publishes a new message
 # joy "sensor_msgs/joy" message that is received when the joystick publishes a new message
 
 def joyVerticalCallback(joy):
-  global joyVerticalLastInput, useJoyVerticalAxis, v_axis, dhEnable, vertJoyVector
+  global joyVerticalLastInput, useJoyVerticalAxis, v_axis, dhEnable, joyVector
   # once copilot interface is created the params will be replaced with topics (inversion + sensitivity)
   joyVerticalLastInput = rospy.get_time()
   # check if thrusters disabled
@@ -134,20 +127,12 @@ def joyVerticalCallback(joy):
     v_axis = expDrive(v_axis)
 
 
-  joyVertVector.linear.x = 0
-  joyVertVector.linear.y = 0
+
   #if dhEnable:
       #joyVertVector.linear.z = dh_eff
   #else:
-  joyVertVector.linear.z = v_axis
-  
-  joyVertVector.angular.x = 0
-
-  # other angular axis for roll and pitch have phase 2 implementation
-  joyVertVector.angular.y = 0
-  joyVertVector.angular.z = 0
-
-  vel_pub.publish(joyVertVector)
+  joyVector.linear.z = v_axis
+  vel_pub.publish(joyVector)
 
 
 # Handles copilot input: updates thrusters, enables sensitivity, and enables inversion.
@@ -195,8 +180,7 @@ def controlCallback(config, level):
 def inversionCallback(data):
   global inversion
   inversion = data.data
-
-
+  
 # What the node does when copilot sensitivity setting publishes a new message
 # "rov_control_interface/rov_sensitivity." message that is received when the sensitivity setting is changed
 
