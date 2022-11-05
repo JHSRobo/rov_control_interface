@@ -71,7 +71,7 @@ If the tcu messages are not immediatly responsive wait for the `serial_node` or 
 * Contirbutors:
   * Michael Equi - Initial work
   * Adon Sharp - Python rewrite
-  * Alex Bertran - Vector drive reconfig
+  * Alex Bertran & James Randall - Vector drive full rewrite
 
 ## Helpful Resources
 
