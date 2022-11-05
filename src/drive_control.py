@@ -55,7 +55,17 @@ def expDrive(axis):
   return axis
 
 def joyHorizontalCallback(joy):
-    global joyVector, sensitivity
+    global camera_select, joyVector, sensitivity
+    
+    # Camera switch
+    if joy.buttons[2]:
+        camera_select.publish(1)
+    elif joy.buttons[3]:
+        camera_select.publish(2)
+    elif joy.buttons[4]:
+        camera_select.publish(3)
+    elif joy.buttons[5]:
+        camera_select.publish(4)
 
     # If thrusters enabled, map the joystick inputs to the joyVector
     if thrustEN:
