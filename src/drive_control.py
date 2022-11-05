@@ -31,19 +31,18 @@ verticalJoyAxisIndex = 3  # vertical axis index in the joy topic array from the 
 
 verticalThrottleAxis = 2  # vertical axis index in the joy topic array from the Thrustmaster TWCS Throttle
 
+
+sensitivity = {"linear": 0.5, "angular": 0.25, "vertical": 0.5} #Holds a percent multiplier for ROV sensitivity
+
+#COME BACK AND REMOVE THESE
 l_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
 a_scale = 0.25  # Holds a percent multiplier for sensitivity control. Default = 50%
 v_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
-
-p_scalar = 0
-i_scalar = 0
-d_scalar = 0
 
 a_axis = 0  # Holds the value of the rotational/angular control axis
 l_axisLR = 0  # Holds the value of the right-left linear control axis
 l_axisFB = 0  # Holds the value of the front-back linear control axis
 v_axis = 0  # Holds the value of the vertical control axis
-dh_eff = 0  # Holds depth hold PID control effort
 
 
 thrustEN = False  # thrusters enabled (True = yes, False = default = no
@@ -53,28 +52,19 @@ useJoyVerticalAxis = True  # Holds the state that determines whether the joystic
 # inversion -> 1 Front, 2 Left, 3 Back, 4 Right, 5 Flipped; used when switching perspectives on ROV
 inversion = 0
 
-# Variable for determining the bilinear threshold
-bilinearRatio = 1.5
-
-# At what percent of the joysticks axis magnitude (-1 to 1) to apply the additional thrust
-bilinearThreshold = 1 / bilinearRatio
-
 # Exponent for Drive Power Calculations
 driveExp = 1.4
-
-dhMostRecentDepth = 0  # holds depth for when depth hold needs to be enabled
-dhEnable = False
 
 roll_cmd_vel = 0  # global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
 
 # Vectors in 2D or 1D
-horizJoyVector = Twist()
-vertJoyVector = Twist()
-dhVector = Twist()
+vertJoyVector = Twist() # DELETE THIS LATER
 
+#The vector that gets edited by the callbacks and then published
+joyVector = Twist()
 
-
-
+# Multiplies the value of the axis by an exponent
+# Uses copysign to make sure that raising axis to an even power can still return a negative number
 def expDrive(axis):
   axis = copysign(abs(axis) ** driveExp, axis)
   return axis
@@ -82,8 +72,12 @@ def expDrive(axis):
 # variable for monitoring the topic frequency so that a disconnect can be declared if the frequency drops below 1Hz
 joyHorizontalLastInput = 0.0
 
+
 def joyHorizontalCallback(joy):
-    global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, v_axis, dhEnable, horizJoyVector, camera_select
+
+    global joyHorizontalLastInput, a_axis, l_axisLR, l_axisFB, camera_select, joyVector
+    #Bodge code for camera switching. Move to joystick program later on.
+    
     if joy.buttons[2]:
         camera_select.publish(1)
     elif joy.buttons[3]:
@@ -96,63 +90,32 @@ def joyHorizontalCallback(joy):
     joyHorizontalLastInput = rospy.get_time()
     # check if thrusters disabled
     if thrustEN:
-        # joystick message
-        if inversion == 4:
-            a_axis = joy.axes[angularJoyAxisIndex] * a_scale
-        else:
-            a_axis = joy.axes[angularJoyAxisIndex] * a_scale * -1
-
+        # multiply LR axis by -1 in base position (front-front, etc.)to make right positive
         # NOTE: right and rotate right are negative on the joystick's LR axis
-        # multiple LR axis by -1 in base position (front-front, etc.)to make right positive
+        a_axis = joy.axes[angularJoyAxisIndex] * a_scale * -1
 
-        if inversion == 1:  # right side is front
-            l_axisFB = joy.axes[linearJoyAxisLRIndex] * l_scale * -1
-            l_axisLR = joy.axes[linearJoyAxisFBIndex] * l_scale
-        elif inversion == 2:  # back side is front
-            l_axisLR = joy.axes[linearJoyAxisLRIndex] * l_scale
-            l_axisFB = joy.axes[linearJoyAxisFBIndex] * l_scale * -1
-        elif inversion == 3:  # left side is front
-            l_axisFB = joy.axes[linearJoyAxisLRIndex] * l_scale
-            l_axisLR = joy.axes[linearJoyAxisFBIndex] * l_scale * -1
-        else:  # front side is front
-            l_axisLR = joy.axes[linearJoyAxisLRIndex] * l_scale * -1
-            l_axisFB = joy.axes[linearJoyAxisFBIndex] * l_scale
+        l_axisLR = joy.axes[linearJoyAxisLRIndex] * l_scale * -1 
+        l_axisFB = joy.axes[linearJoyAxisFBIndex] * l_scale
 
         # apply the exponential ratio on all axis
         a_axis = expDrive(a_axis)
         l_axisLR = expDrive(l_axisLR)
         l_axisFB = expDrive(l_axisFB)
-        #if useJoyVerticalAxis:
-            #v_axis = joy.axes[verticalJoyAxisIndex] * v_scale * -1
-            #v_axis = expDrive(v_axis)
 
-            # turn position-based depth hold on/off
-            #if v_axis == 0:
-                #dhEnable = True
-            #else:
-                #dhEnable = False
-            #dh_enable_pub.publish(dhEnable)
     else:
         a_axis = 0
         l_axisLR = 0
         l_axisFB = 0
-        #v_axis = 0
-        #dhEnable = False
+
 
     # publish the vector values -> build up command vector message
     horizJoyVector = Twist()
 
-    horizJoyVector.linear.x = l_axisLR
-    horizJoyVector.linear.y = l_axisFB
-    horizJoyVector.linear.z = 0
+    joyVector.linear.x = l_axisLR
+    joyVector.linear.y = l_axisFB
+    joyVector.angular.x = a_axis
 
-    horizJoyVector.angular.x = a_axis
-
-    # other angular axis for roll and pitch
-    horizJoyVector.angular.y = roll_cmd_vel
-    horizJoyVector.angular.z = 0
-
-    #vel_pub.publish(horizJoyVector)
+    vel_pub.publish(horizJoyVector)
 
 # variable for monitoring the topic frequency so that a disconnect can be declared if the frequency drops below 1Hz
 #joyVerticalLastInput = 0.0
@@ -170,21 +133,6 @@ def joyVerticalCallback(joy):
     v_axis = joy.axes[verticalThrottleAxis] * v_scale * -1
     v_axis = expDrive(v_axis)
 
-    # turn position-based depth hold on/off
-    # dhEnableMsg = Bool()
-    # if v_axis == 0:
-        # dhEnable = True
-        # dhEnableMsg.data = dhEnable
-    # else:
-        # dhEnable = False
-        # dhEnableMsg.data = dhEnable
-
-    # dh_enable_pub.publish(dhEnableMsg)
-
-  # else:
-      # v_axis = 0
-      # dhEnable = False
-
 
   joyVertVector.linear.x = 0
   joyVertVector.linear.y = 0
@@ -199,34 +147,7 @@ def joyVerticalCallback(joy):
   joyVertVector.angular.y = 0
   joyVertVector.angular.z = 0
 
-  #vel_pub.publish(joyVertVector)
-  elif thrustEN and dhEnable:
-    depthHold() # NOT IMPLEMENTED YET
-
-
-#def joyWatchdogCB(data):
-  #global commandVectors, vel_pub, l_axisFB, l_axisLR, a_axis, useJoyVerticalAxis
-  # checks the joystick
-  #if rospy.get_time() > joyHorizontalLastInput + 1.5:
-      # ROS_ERROR("Joystick disconnection detected!")
-      # publish the vector values for failsafe mode
-      #commandVectors = Twist() # Default message contains all zeros
-      # Reset all the values to prevent feedback loop from throttle
-      #l_axisLR = 0
-      #l_axisFB = 0
-      #a_axis = 0
-      #if not useJoyVerticalAxis:
-        # if the throttle is plugged in,then continue using the v_axis value
-        #commandVectors.linear.z = v_axis
-        #commandVectors.angular.y = roll_cmd_vel
-        #vel_pub.publish(commandVectors)
-
-     # Check the throttle
-#if rospy.get_time() > joyVerticalLastInput + 1.5:
-  # ROS_ERROR("Throttle disconnection detected!")
-  #useJoyVerticalAxis = True
-
-
+  vel_pub.publish(joyVertVector)
 
 
 # Handles copilot input: updates thrusters, enables sensitivity, and enables inversion.
@@ -254,13 +175,6 @@ def controlCallback(config, level):
     sensitivityMsg.a_scale = a_scale
     sensitivityMsg.v_scale = v_scale
     sensitivity_pub.publish(sensitivityMsg)    
-
-    # PID depth hold publisher
-    #dhMsg = PID()
-    ##dhMsg.p_scalar = p_scalar
-    #dhMsg.i_scalar = i_scalar
-    #dhMsg.d_scalar = d_scalar
-    #dh_pub.publish(dhMsg)
     
     # Thrusters enabled Publisher
     thrusterStatusMsg = Bool()
