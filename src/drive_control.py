@@ -103,7 +103,7 @@ def joyVerticalCallback(joy):
   
   # check if thrusters disabled
   if thrustEN:
-    v_axis = joy.axes[verticalThrottleAxis] * v_scale * -1
+    v_axis = joy.axes[verticalThrottleAxis] * sensitivity["vertical"] * -1
     v_axis = expDrive(v_axis)
   else:
     v_axis = 0
