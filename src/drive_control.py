@@ -9,6 +9,7 @@ from std_msgs.msg import UInt8  # For camera  pub
 from math import copysign
 from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
+from rov_control_interface.msg import thrusterPercents
 
 rospy.init_node("drive_control")
 
@@ -24,6 +25,50 @@ joyVector = Twist()
 def expDrive(axis):
   axis = copysign(abs(axis) ** 1.4, axis)
   return axis
+
+# Takes in vectors and translates them to thrusterPercents
+  # linearX is the left-right joystick axis
+  # linearY is the front-back joystick axis
+  # linearZ is the throttle
+  # angularX is the rotational joystick axis
+def translateVectors(linearX, linearY, linearZ, angularX):
+  #Check to make sure values are appropriate
+  if abs(linearX) > 1 or abs(linearY) > 1 or abs(linearZ) > 1 or abs(angularX) > 1: # The values for max are subject to change
+    rospy.logerr("Vectors outside of range")
+  
+  # Motor Calculations
+  # IMPORTANT TO UNDERSTAND THIS: https://drive.google.com/file/d/11VF0o0OYVaFGKFvbYtnrmOS0e6yM6IxH/view
+  # TOTALLY SUBJECT TO CHANGE IN EVENT OF THRUSTER REARRANGEMENT
+  T1 = linearX + linearY + angularX
+  T2 = -linearX + linearY - angularX
+  T3 = -linearX - linearY + angularX
+  T4 = linearX - linearY - angularX
+  T5 = linearZ
+  T6 = linearZ
+  
+  # Do a little math to normalize the values
+  maxMotor = max(abs(T1), abs(T2), abs(T3), abs(T4), abs(T5), abs(T6))
+  maxInput = max(abs(linearX), abs(linearY), abs(linearZ), abs(angularX))
+  if maxMotor == 0:
+    maxMotor = 1
+  T1 *= maxInput / maxMotor
+  T2 *= maxInput / maxMotor
+  T3 *= maxInput / maxMotor
+  T4 *= maxInput / maxMotor
+  T5 *= maxInput / maxMotor
+  T6 *= maxInput / maxMotor
+  
+  # Load up the thrusterVals message with our calculated values
+  thrusterVals = thrusterPercents() # The amount we multiply each value by is just what we had in the original code. Subject to change
+  thrusterVals.t1 = T1 * 1000
+  thrusterVals.t2 = T2 * 1000
+  thrusterVals.t3 = T3 * 1000
+  thrusterVals.t4 = T4 * 1000
+  thrusterVals.t5 = T5 * 1000
+  thrusterVals.t6 = T6 * 1000
+  
+  return thrusterVals
+
 
 def joyHorizontalCallback(joy):
     global camera_select, joyVector, sensitivity, thrustEn
@@ -97,7 +142,7 @@ def main():
     horizJoySub = rospy.Subscriber('joy/joy1', Joy, joyHorizontalCallback)
     vertJoySub = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
 
-    velPub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
+    velPub = rospy.Publisher('thrusters', Twist, queue_size=1)
     camera_select = rospy.Publisher('rov/camera_select', UInt8, queue_size=3)
 
     # setup dynamic reconfigure
