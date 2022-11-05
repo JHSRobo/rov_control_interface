@@ -1,13 +1,6 @@
 #!/usr/bin/env python
 # author Adon Sharp | v0.2 | 1-15-2022
 # author Alex Bertran | v1.0 | 10-29-2022
-# warning this file contains temporary implementations for cameras, tcu board control, and copilot interface
-# mainpage the drive_control node
-# section intro_sec Introduction
-# This code contains implementations for bilinear control, sensitivity, and 4-way inversion. The node subscribes to a joy topic and publishes rov/cmd_vel to PID algorithms and vector drive.
-# section compile_sec Compilation
-# Compile using catkin_make in the ros_workspace directory.
-
 
 import rospy
 from geometry_msgs.msg import Twist
@@ -21,23 +14,11 @@ from nav_msgs.msg import Odometry
 from math import copysign
 from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
-from rov_control_interface.msg import rov_sensitivity
 
 rospy.init_node("drive_control")
-linearJoyAxisFBIndex = 1  # forward-backward axis index in the joy topic array from the logitech Extreme 3D Pro
-linearJoyAxisLRIndex = 0  # left-right axis index in the joy topic array from the logitech Extreme 3D Pro
-angularJoyAxisIndex = 2  # rotational axis index in the joy topic array from the logitech Extreme 3D Pro
 verticalJoyAxisIndex = 3  # vertical axis index in the joy topic array from the logitech Extreme 3D Pro
 
-verticalThrottleAxis = 2  # vertical axis index in the joy topic array from the Thrustmaster TWCS Throttle
-
-
-sensitivity = {"linear": 0.5, "angular": 0.25, "vertical": 0.5} #Holds a percent multiplier for ROV sensitivity
-
-#COME BACK AND REMOVE THESE
-l_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
-a_scale = 0.25  # Holds a percent multiplier for sensitivity control. Default = 50%
-v_scale = 0.5  # Holds a percent multiplier for sensitivity control. Default = 50%
+sensitivity = {"linear": 0.5, "angular": 0.25, "vertical": 0.5} # Holds a percent multiplier for ROV sensitivity
 
 a_axis = 0  # Holds the value of the rotational/angular control axis
 l_axisLR = 0  # Holds the value of the right-left linear control axis
@@ -48,6 +29,7 @@ v_axis = 0  # Holds the value of the vertical control axis
 thrustEN = False  # thrusters enabled (True = yes, False = default = no
 dhEnable = False  # for depth hold, TEMPORARY PLACEHOLDER TO PREVENT ERRORS
 
+<<<<<<< Updated upstream
 useJoyVerticalAxis = True  # Holds the state that determines whether the joysticks vertical input of the throttles vertical input gets used
 
 # inversion -> 1 Front, 2 Left, 3 Back, 4 Right, 5 Flipped; used when switching perspectives on ROV
@@ -61,13 +43,15 @@ roll_cmd_vel = 0  # global to store roll_stab control effort for cmd_vel integra
 # Vectors in 2D or 1D
 vertJoyVector = Twist() # DELETE THIS LATER
 
+=======
+>>>>>>> Stashed changes
 #The vector that gets edited by the callbacks and then published
 joyVector = Twist()
 
-# Multiplies the value of the axis by an exponent
+# Multiplies the value of the axis by an exponent (1.4)
 # Uses copysign to make sure that raising axis to an even power can still return a negative number
 def expDrive(axis):
-  axis = copysign(abs(axis) ** driveExp, axis)
+  axis = copysign(abs(axis) ** 1.4, axis)
   return axis
 
 # variable for monitoring the topic frequency so that a disconnect can be declared if the frequency drops below 1Hz
@@ -90,14 +74,20 @@ def joyHorizontalCallback(joy):
     joyHorizontalLastInput = rospy.get_time()
     # check if thrusters disabled
     if thrustEN:
-        # multiply LR axis by -1 in base position (front-front, etc.)to make right positive
+        # Multiply LR axis by -1 in base position (front-front, etc.)to make right positive
         # NOTE: right and rotate right are negative on the joystick's LR axis
+<<<<<<< Updated upstream
         a_axis = joy.axes[angularJoyAxisIndex] * a_scale * -1
 
         l_axisLR = joy.axes[linearJoyAxisLRIndex] * l_scale * -1 
         l_axisFB = joy.axes[linearJoyAxisFBIndex] * l_scale
+=======
+        l_axisLR = joy.axes[0] * sensitivity['linear'] * -1
+        l_axisFB = joy.axes[1] * sensitivity['linear']
+        a_axis = joy.axes[2] * sensitivity['angular'] * -1 
+>>>>>>> Stashed changes
 
-        # apply the exponential ratio on all axis
+        # Apply the exponential ratio on all axis
         a_axis = expDrive(a_axis)
         l_axisLR = expDrive(l_axisLR)
         l_axisFB = expDrive(l_axisFB)
@@ -107,6 +97,7 @@ def joyHorizontalCallback(joy):
         l_axisLR = 0
         l_axisFB = 0
 
+    # Add the created vectors to the joyVector
     joyVector.linear.x = l_axisLR
     joyVector.linear.y = l_axisFB
     joyVector.angular.x = a_axis
@@ -121,9 +112,14 @@ def joyVerticalCallback(joy):
   # once copilot interface is created the params will be replaced with topics (inversion + sensitivity)
   joyVerticalLastInput = rospy.get_time()
   # check if thrusters disabled
+<<<<<<< Updated upstream
   useJoyVerticalAxis = False
   if thrustEN and dhEnable == False:
     v_axis = joy.axes[verticalThrottleAxis] * v_scale * -1
+=======
+  if thrustEN:
+    v_axis = joy.axes[2] * sensitivity['vertical'] * -1
+>>>>>>> Stashed changes
     v_axis = expDrive(v_axis)
 
 
@@ -134,14 +130,19 @@ def joyVerticalCallback(joy):
   joyVector.linear.z = v_axis
   vel_pub.publish(joyVector)
 
+<<<<<<< Updated upstream
 
 # Handles copilot input: updates thrusters, enables sensitivity, and enables inversion.
+=======
+# Handles copilot input: updates thrusters, edits sensitivity
+>>>>>>> Stashed changes
 # Callback to anything published by the dynamic reconfigure copilot page
 # &config New copilot_interface param
 # level The OR-ing of all the values that have changed in the copilot_interface param (not used yet)
 
 
 def controlCallback(config, level):
+<<<<<<< Updated upstream
     global thrustEN, l_scale, a_scale, v_scale, dhEnable, p_scalar, i_scalar, d_scalar
     thrustEN = config.thrusters
 
@@ -233,9 +234,20 @@ def rsControlEffortCallback(data):
   global roll_cmd_vel
   roll_cmd_vel = data.data
 
+=======
+    global thrustEN, sensitivity
+    
+    thrustEN = config.thrusters
 
+    sensitivity['linear'] = config.l_scale
+    sensitivity['angular'] = config.a_scale
+    sensitivity['vertical'] = config.v_scale
+>>>>>>> Stashed changes
+
+    return config
 
 def main():
+<<<<<<< Updated upstream
     global joy_sub1, joy_sub2, thruster_status_sub, sensitivity_sub, depth_hold_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, rs_ctrl_eff_sub, inversion_pub, inversion_sub, vel_pub, camera_select, power_control, solenoid_control, sensitivity_pub, depth_hold_pub, thruster_status_pub, micro_status_pub, dh_cmd_vel_pub, dh_setpoint_pub, dh_enable_pub, lat_pid_pub, long_pid_pub, vert_pid_pub, roll_pid_pub, yaw_pid_pub
     joy_sub1 = rospy.Subscriber('joy/joy1', Joy, joyHorizontalCallback)
     joy_sub2 = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
@@ -247,18 +259,14 @@ def main():
     dh_toggle_sub = rospy.Subscriber('depth_hold/pid_enable', Bool, dhToggleCallback)
     rs_ctrl_eff_sub = rospy.Subscriber('roll_stabilization/control_effort', Float64, rsControlEffortCallback)
     inversion_sub = rospy.Subscriber('rov/inversion', UInt8, inversionCallback)
+=======
+    global horizJoySub, vertJoySub, vel_pub, camera_select
+    horizJoySub = rospy.Subscriber('joy/joy1', Joy, joyHorizontalCallback)
+    vertJoySub = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
+>>>>>>> Stashed changes
 
     vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
-    inversion_pub = rospy.Publisher('rov/inversion', UInt8, queue_size=1)
     camera_select = rospy.Publisher('rov/camera_select', UInt8, queue_size=3)
-    power_control = rospy.Publisher('tcu/main_relay', Bool, queue_size=3)
-    solenoid_control = rospy.Publisher('tcu/main_solenoid', Bool, queue_size=3)
-    sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, queue_size=3)
-    #depth_hold_pub = rospy.Publisher('depth_hold/pid_vals', PID, queue_size=3)
-    thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
-    dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
-    dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, queue_size=1)
-    dh_enable_pub = rospy.Publisher('depth_hold/pid_enable', Bool, queue_size=1)
 
     # topics for PIDs
     lat_pid_pub = rospy.Publisher('/lat_motion/pid_enable', Bool, queue_size=1)
