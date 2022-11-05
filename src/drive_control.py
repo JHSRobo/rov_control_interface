@@ -8,7 +8,6 @@
 # section compile_sec Compilation
 # Compile using catkin_make in the ros_workspace directory.
 
-
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
@@ -28,9 +27,7 @@ linearJoyAxisFBIndex = 1  # forward-backward axis index in the joy topic array f
 linearJoyAxisLRIndex = 0  # left-right axis index in the joy topic array from the logitech Extreme 3D Pro
 angularJoyAxisIndex = 2  # rotational axis index in the joy topic array from the logitech Extreme 3D Pro
 verticalJoyAxisIndex = 3  # vertical axis index in the joy topic array from the logitech Extreme 3D Pro
-
 verticalThrottleAxis = 2  # vertical axis index in the joy topic array from the Thrustmaster TWCS Throttle
-
 
 sensitivity = {"linear": 0.5, "angular": 0.25, "vertical": 0.5} #Holds a percent multiplier for ROV sensitivity
 
@@ -47,9 +44,6 @@ inversion = 0 # DELETE LATER
 
 # Exponent for Drive Power Calculations
 driveExp = 1.4
-
-roll_cmd_vel = 0  # global to store roll_stab control effort for cmd_vel integration (there has to be a better way)
-# ^DELETE LATER
 
 #The vector that gets edited by the callbacks and then published
 joyVector = Twist()
@@ -145,8 +139,6 @@ def controlCallback(config, level):
     inversion_pub.publish(inversionMsg)
     return config
 
-
-
 # What the node does when copilot inversion setting publishes a new message
 # joy "sensor_msgs/Joy" message that is received when the joystick publishes a new message
 
@@ -175,38 +167,26 @@ def depthHoldCallback(data):
 def ROS_INFO_STREAM(thrustEN):
     pass
 
-
 def thrusterStatusCallback(data):
   global thrustEN
   thrustEN = data.data
   ROS_INFO_STREAM(thrustEN)
 
-
 def dhToggleCallback(data):
   global dhEnable
   dhEnable = data.data
-
 
 def dhStateCallback(data):
   global dhMostRecentDepth
   if dhEnable: # only update depth if depth hold is disabled {dhEnable == False}
       dhMostRecentDepth = data.pose.pose.position.z * -1
       depth = Float64()
-      depth.data =dhMostRecentDepth
+      depth.data = dhMostRecentDepth
       dh_setpoint_pub.publish(depth)
-
-
 
 def dhControlEffortCallback(data): # no need for dhEnable check since PIDs won't publish control effort when disabled
   global dh_eff
   dh_eff = data.data
-
-
-def rsControlEffortCallback(data):
-  global roll_cmd_vel
-  roll_cmd_vel = data.data
-
-
 
 def main():
     global joy_sub1, joy_sub2, thruster_status_sub, sensitivity_sub, depth_hold_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, rs_ctrl_eff_sub, inversion_pub, inversion_sub, vel_pub, camera_select, power_control, solenoid_control, sensitivity_pub, depth_hold_pub, thruster_status_pub, micro_status_pub, dh_cmd_vel_pub, dh_setpoint_pub, dh_enable_pub
@@ -218,7 +198,6 @@ def main():
     dh_state_sub = rospy.Subscriber('odometry/filtered', Odometry, dhStateCallback)
     dh_ctrl_eff_sub = rospy.Subscriber('depth_hold/control_effort', Float64, dhControlEffortCallback)
     dh_toggle_sub = rospy.Subscriber('depth_hold/pid_enable', Bool, dhToggleCallback)
-    rs_ctrl_eff_sub = rospy.Subscriber('roll_stabilization/control_effort', Float64, rsControlEffortCallback)
     inversion_sub = rospy.Subscriber('rov/inversion', UInt8, inversionCallback)
 
     vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
@@ -229,7 +208,6 @@ def main():
     sensitivity_pub = rospy.Publisher('rov/sensitivity', rov_sensitivity, queue_size=3)
     #depth_hold_pub = rospy.Publisher('depth_hold/pid_vals', PID, queue_size=3)
     thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
-    dh_cmd_vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
     dh_setpoint_pub = rospy.Publisher('depth_hold/setpoint', Float64, queue_size=1)
     dh_enable_pub = rospy.Publisher('depth_hold/pid_enable', Bool, queue_size=1)
 
