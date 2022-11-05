@@ -16,7 +16,6 @@ from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
 
 rospy.init_node("drive_control")
-verticalJoyAxisIndex = 3  # vertical axis index in the joy topic array from the logitech Extreme 3D Pro
 
 sensitivity = {"linear": 0.5, "angular": 0.25, "vertical": 0.5} # Holds a percent multiplier for ROV sensitivity
 
@@ -32,9 +31,9 @@ def expDrive(axis):
   return axis
 
 def joyHorizontalCallback(joy):
-    global camera_select, joyVector
-    #Bodge code for camera switching. Move to joystick program later on.
+    global camera_select, joyVector, sensitivity, thrustEn
     
+    # Bodge code for camera switching. Move to joystick program later on.
     if joy.buttons[2]:
         camera_select.publish(1)
     elif joy.buttons[3]:
@@ -43,17 +42,18 @@ def joyHorizontalCallback(joy):
         camera_select.publish(3)
     elif joy.buttons[5]:
         camera_select.publish(4)
-    
-    joyHorizontalLastInput = rospy.get_time()
-    # check if thrusters disabled
+
+    # If thrusters enabled, map the joystick inputs to the joyVector
     if thrustEN:
         # Multiply LR axis by -1 in base position (front-front, etc.)to make right positive
         # NOTE: right and rotate right are negative on the joystick's LR axis
+
         l_axisLR = joy.axes[0] * sensitivity['linear'] * -1
         l_axisFB = joy.axes[1] * sensitivity['linear']
         a_axis = joy.axes[2] * sensitivity['angular'] * -1 
 
         # Apply the exponential ratio on all axis
+
         a_axis = expDrive(a_axis)
         l_axisLR = expDrive(l_axisLR)
         l_axisFB = expDrive(l_axisFB)
@@ -67,23 +67,22 @@ def joyHorizontalCallback(joy):
     joyVector.linear.y = l_axisFB
     joyVector.angular.x = a_axis
 
-    vel_pub.publish(joyVector)
+    velPub.publish(joyVector)
 
-# what the node does when throttle publishes a new message
-# joy "sensor_msgs/joy" message that is received when the joystick publishes a new message
-
+# Callback that runs whenever the throttle sends an update
 def joyVerticalCallback(joy):
-  global v_axis, dhEnable, joyVector
+  global thrustEn, joyVector, sensitivity
 
   # check if thrusters disabled
   if thrustEN:
     v_axis = joy.axes[2] * sensitivity['vertical'] * -1
+
     v_axis = expDrive(v_axis)
   else:
     v_axis = 0
 
   joyVector.linear.z = v_axis
-  vel_pub.publish(joyVector)
+  velPub.publish(joyVector)
 
 # Handles copilot input: updates thrusters, edits sensitivity
 # Callback to anything published by the dynamic reconfigure copilot page
@@ -92,7 +91,6 @@ def controlCallback(config, level):
     global thrustEN, sensitivity
     
     thrustEN = config.thrusters
-
     sensitivity['linear'] = config.l_scale
     sensitivity['angular'] = config.a_scale
     sensitivity['vertical'] = config.v_scale
@@ -100,11 +98,11 @@ def controlCallback(config, level):
     return config
 
 def main():
-    global horizJoySub, vertJoySub, vel_pub, camera_select
+    global horizJoySub, vertJoySub, velPub, camera_select
     horizJoySub = rospy.Subscriber('joy/joy1', Joy, joyHorizontalCallback)
     vertJoySub = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
 
-    vel_pub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
+    velPub = rospy.Publisher('rov/cmd_vel', Twist, queue_size=1)
     camera_select = rospy.Publisher('rov/camera_select', UInt8, queue_size=3)
 
     # setup dynamic reconfigure
