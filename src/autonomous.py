@@ -9,12 +9,12 @@ from std_msgs.msg import UInt8  # For camera  pub
 from std_msgs.msg import Bool  # For TCU relay and solenoid controller pub and for pids
 from std_msgs.msg import Float64  # For pids
 from std_msgs.msg import Float32
+from std_msgs.msg import Int32
 from nav_msgs.msg import Odometry
 
 from math import copysign
 from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
-from rov_control_interface.msg import rov_sensitivity
 
 rospy.init_node("autonomous_control")
 
@@ -66,9 +66,12 @@ def dhControlEffortCallback(data): # no need for dhEnable check since PIDs won't
   
   dh_eff = data.data
   
-def change_depth_callback(data, depth):
-  global dhEnable, thrustEN
-  
+def change_depth_callback(depth):
+  global dhEnable, thrustEN, test_pub
+  #THIS FOLLOWING CODE IS INTENTIONALLY CRAP. REMOVE WHEN POSSIBLE
+  test_pub = rospy.Publisher('/rov/thruster_testing', Int32, queue_size=1)
+
+  rospy.loginfo("depth recieved")  
   if thrustEN and dhEnable:
     currentDepth = abs((depth.data - 198.3) / (893.04 / 149))
     test_pub.publish(currentDepth)
@@ -76,14 +79,13 @@ def change_depth_callback(data, depth):
 def main():
   global thruster_status_sub, depth_hold_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, depth_sub
   
+  #test_pub = rospy.Publisher('/rov/thruster_testing', Int32, queue_size=1)
   thruster_status_sub = rospy.Subscriber('rov/thruster_status', Bool,thrusterStatusCallback)
-  depth_hold_sub = rospy.Subscriber('depth_hold/pid_enable', PID, depthHoldCallback)
+  #depth_hold_sub = rospy.Subscriber('depth_hold/pid_enable', PID, depthHoldCallback)
   dh_state_sub = rospy.Subscriber('odometry/filtered', Odometry, dhStateCallback)
   dh_ctrl_eff_sub = rospy.Subscriber('depth_hold/control_effort', Float64, dhControlEffortCallback)
   dh_toggle_sub = rospy.Subscriber('depth_hold/pid_enable', Bool, dhToggleCallback)
   depth_sub = rospy.Subscriber('rov/depth_sensor', Float32, change_depth_callback)
-  
-  test_pub = rospy.Publisher('depth_hold/test_depth', Float32, queue_size=1)
   
   server = Server(copilotControlParamsConfig, controlCallback)
   
