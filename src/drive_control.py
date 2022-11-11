@@ -39,33 +39,35 @@ def translateVectors(linearX, linearY, linearZ, angularX):
   # Motor Calculations
   # IMPORTANT TO UNDERSTAND THIS: https://drive.google.com/file/d/11VF0o0OYVaFGKFvbYtnrmOS0e6yM6IxH/view
   # TOTALLY SUBJECT TO CHANGE IN EVENT OF THRUSTER REARRANGEMENT
-  T1 = linearX + linearY + angularX
-  T2 = -linearX + linearY - angularX
-  T3 = -linearX - linearY + angularX
-  T4 = linearX - linearY - angularX
-  T5 = linearZ
-  T6 = linearZ
+  # T is the name of the dictionary where we store our temp thruster vals. This is a dict and not a list so we can start at index 1.
+  # This is advantageouss because it means T[1] lines up with Thruster #1 on the ROV.
+  T = {1 : linearX + linearY + angularX, 2 : -linearX + linearY - angularX, 3 : -linearX - linearY + angularX,
+       4 : linearX - linearY - angularX, 5 : linearZ, 6 : linearZ}
+  T[1] = linearX + linearY + angularX
+  T[2] = -linearX + linearY - angularX
+  T[3] = -linearX - linearY + angularX
+  T[4] = linearX - linearY - angularX
+  T[5] = linearZ
+  T[6] = linearZ
   
   # Do a little math to normalize the values
-  maxMotor = max(abs(T1), abs(T2), abs(T3), abs(T4), abs(T5), abs(T6))
+  maxMotor = max(abs(T[1]), abs(T[2]), abs(T[3]), abs(T[4]), abs(T[5]), abs(T[6]))
   maxInput = max(abs(linearX), abs(linearY), abs(linearZ), abs(angularX))
   if maxMotor == 0:
     maxMotor = 1
-  T1 *= maxInput / maxMotor
-  T2 *= maxInput / maxMotor
-  T3 *= maxInput / maxMotor
-  T4 *= maxInput / maxMotor
-  T5 *= maxInput / maxMotor
-  T6 *= maxInput / maxMotor
+
+  for key in T:
+    T[key] *= maxInput / maxMotor
   
   # Load up the thrusterVals message with our calculated values
   thrusterVals = thrusterPercents() # The amount we multiply each value by is just what we had in the original code. Subject to change
-  thrusterVals.t1 = T1 * 1000
-  thrusterVals.t2 = T2 * 1000
-  thrusterVals.t3 = T3 * 1000
-  thrusterVals.t4 = T4 * 1000
-  thrusterVals.t5 = T5 * 1000
-  thrusterVals.t6 = T6 * 1000
+
+  thrusterVals.t1 = T[1] * 1000
+  thrusterVals.t2 = T[2] * 1000
+  thrusterVals.t3 = T[3] * 1000
+  thrusterVals.t4 = T[4] * 1000
+  thrusterVals.t5 = T[5] * 1000
+  thrusterVals.t6 = T[6] * 1000
   
   return thrusterVals
 
