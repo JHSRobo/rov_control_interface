@@ -68,8 +68,6 @@ def dhControlEffortCallback(data): # no need for dhEnable check since PIDs won't
   
 def change_depth_callback(depth):
   global dhEnable, thrustEN, test_pub
-  #THIS FOLLOWING CODE IS INTENTIONALLY CRAP. REMOVE WHEN POSSIBLE
-  test_pub = rospy.Publisher('/rov/thruster_testing', Int32, queue_size=1)
 
   rospy.loginfo("depth recieved")  
   if thrustEN and dhEnable:
@@ -77,9 +75,9 @@ def change_depth_callback(depth):
     test_pub.publish(currentDepth)
   
 def main():
-  global thruster_status_sub, depth_hold_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, depth_sub
+  global thruster_status_sub, depth_hold_sub, dh_state_sub, dh_ctrl_eff_sub, dh_toggle_sub, depth_sub, test_pub
   
-  #test_pub = rospy.Publisher('/rov/thruster_testing', Int32, queue_size=1)
+  test_pub = rospy.Publisher('/rov/thruster_testing', Int32, queue_size=1)
   thruster_status_sub = rospy.Subscriber('rov/thruster_status', Bool,thrusterStatusCallback)
   #depth_hold_sub = rospy.Subscriber('depth_hold/pid_enable', PID, depthHoldCallback)
   dh_state_sub = rospy.Subscriber('odometry/filtered', Odometry, dhStateCallback)
