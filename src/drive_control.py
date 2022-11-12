@@ -73,7 +73,7 @@ def translateVectors(linearX, linearY, linearZ, angularX):
 
 
 def joyHorizontalCallback(joy):
-    global camera_select, joyVector, sensitivity, thrustEn
+    global camera_select, joyVector, sensitivity, thrustEN
     
     # Bodge code for camera switching. Move to joystick program later on.
     if joy.buttons[2]:
