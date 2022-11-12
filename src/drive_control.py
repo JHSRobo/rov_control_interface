@@ -136,16 +136,38 @@ def controlCallback(config, level):
     sensitivity['linear'] = config.l_scale
     sensitivity['angular'] = config.a_scale
     sensitivity['vertical'] = config.v_scale
+    
+    # Sensitivity publisher
+    sensitivityMsg = rov_sensitivity()
+    sensitivityMsg.l_scale = l_scale
+    sensitivityMsg.a_scale = a_scale
+    sensitivityMsg.v_scale = v_scale
+    sensitivity_pub.publish(sensitivityMsg)    
+    
+    # Thrusters enabled Publisher
+    thrusterStatusMsg = Bool()
+    thrusterStatusMsg.data = thrustEN
+    thruster_status_pub.publish(thrusterStatusMsg)
 
     return config
 
+def ROS_INFO_STREAM(thrustEN):
+    pass
+  
+def thrusterStatusCallback(data):
+    global thrustEN
+    thrustEN = data.data
+    ROS_INFO_STREAM(thrustEN)
+  
 def main():
     global horizJoySub, vertJoySub, velPub, camera_select
     horizJoySub = rospy.Subscriber('joy/joy1', Joy, joyHorizontalCallback)
     vertJoySub = rospy.Subscriber('joy/joy2', Joy, joyVerticalCallback)
+    thruster_status_sub = rospy.Subscriber('rov/thruster_status', Bool, thrusterStatusCallback)
 
     velPub = rospy.Publisher('thrusters', Twist, queue_size=1)
     camera_select = rospy.Publisher('rov/camera_select', UInt8, queue_size=3)
+    thruster_status_pub = rospy.Publisher('rov/thruster_status', Bool, queue_size=3)
 
     # setup dynamic reconfigure
     server = Server(copilotControlParamsConfig, controlCallback)
