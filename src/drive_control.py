@@ -113,7 +113,7 @@ def joyHorizontalCallback(joy):
 
 # Callback that runs whenever the throttle sends an update
 def joyVerticalCallback(joy):
-  global thrustEn, joyVector, sensitivity
+  global thrustEN, joyVector, sensitivity
 
   # check if thrusters disabled
   if thrustEN:
