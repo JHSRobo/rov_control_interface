@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # author Adon Sharp | v0.2 | 1-15-2022
 # author Alex Bertran | v1.0 | 10-29-2022
 
