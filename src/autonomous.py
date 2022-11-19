@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # author Alex Bertran | v0.0 | 11-11-2022
 # Current imports are all those from drive_control.py and some may not be necessary
 import rospy
