@@ -1,8 +1,5 @@
 <launch>
-
- <!-- joystick -> vectorCommand-->
-  <node pkg="rov_control_interface" type="drive_control.py" name="drive_control"/>
-
+ 
  <!-- Joy node -->
   <node respawn="true" pkg="joy"
         type="joy_node" name="rov_joy" >
