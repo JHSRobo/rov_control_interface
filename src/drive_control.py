@@ -5,7 +5,7 @@
 import rospy
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-from std_msgs.msg import UInt8  # For camera  pub
+from std_msgs.msg import UInt8 Bool # For camera  pub
 from math import copysign
 from dynamic_reconfigure.server import Server
 from copilot_interface.cfg import copilotControlParamsConfig
