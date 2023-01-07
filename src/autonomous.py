@@ -18,6 +18,7 @@ from copilot_interface.cfg import copilotControlParamsConfig
 
 rospy.init_node("autonomous_control")
 
+# thruster and depth hold status, default = off
 thrustEN = False
 dhEnable = False
 
@@ -35,6 +36,7 @@ def controlCallback(config, level):
 def ROS_INFO_STREAM(thrustEN):
   pass
 
+# update thrustEN based on thruster status, on/off
 def thrusterStatusCallback(data):
   global thrustEN
   thrustEN = data.data
@@ -47,11 +49,13 @@ def depthHoldCallback(data):
   i_scalar = data.i_scalar
   d_scalar = data.d_scalar
 
+# update status of dhEnable, on/off
 def dhToggleCallback(data):
   global dhEnable
   
   dhEnable = data.data
-  
+
+# ???
 def dhStateCallback(data):
   global dhMostRecentDepth
   
@@ -71,6 +75,7 @@ def change_depth_callback(depth):
 
   rospy.loginfo("depth recieved")  
   if thrustEN and dhEnable:
+    # calibration of pressure sensor
     currentDepth = abs((depth.data - 198.3) / (893.04 / 149))
     test_pub.publish(currentDepth)
   
