@@ -43,12 +43,6 @@ def translateVectors(linearX, linearY, linearZ, angularX):
   # This is advantageouss because it means T[1] lines up with Thruster #1 on the ROV.
   T = {1 : linearX + linearY + angularX, 2 : -linearX + linearY - angularX, 3 : -linearX - linearY + angularX,
        4 : linearX - linearY - angularX, 5 : linearZ, 6 : linearZ}
-  T[1] = linearX + linearY + angularX
-  T[2] = -linearX + linearY - angularX
-  T[3] = -linearX - linearY + angularX
-  T[4] = linearX - linearY - angularX
-  T[5] = linearZ
-  T[6] = linearZ
   
   # Do a little math to normalize the values
   maxMotor = max(abs(T[1]), abs(T[2]), abs(T[3]), abs(T[4]), abs(T[5]), abs(T[6]))
